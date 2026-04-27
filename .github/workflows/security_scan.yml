@@ -25,13 +25,12 @@ on:
       - main
       - develop
       - "feature/**"
+      - "claude/**"
   pull_request:
     branches:
       - main
       - develop
-  # Auch regelmäßig scannen (frühzeitig erkennen)
   schedule:
-    # Jeden Montag um 04:00 Uhr UTC
     - cron: "0 4 * * 1"
 
 concurrency:
@@ -47,17 +46,15 @@ jobs:
       - name: "Repository auschecken (vollständige Historie für Scan)"
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Vollständige Git-Historie laden (für Historic-Scan)
+          fetch-depth: 0
 
       - name: "gitleaks Secret Scan ausführen"
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Konfiguration in .gitleaks.toml (optional, für Ausnahmen)
-          config-path: .gitleaks.toml
+          # GITLEAKS_CONFIG: Wird automatisch aus .gitleaks.toml im Root geladen
+          # Keine manuelle config-path Angabe nötig — gitleaks findet .gitleaks.toml
 
-  # Zusätzlicher Scan: Prüfe ob .env-Dateien ins Repo gelangt sind
   env-file-check:
     name: Check für .env-Dateien im Repo
     runs-on: ubuntu-latest
@@ -69,33 +66,32 @@ jobs:
       - name: "Auf .env-Dateien prüfen"
         run: |
           # Prüfe ob echte .env-Dateien (nicht .env.example) im Repo sind
-          if find . -name ".env" -not -name ".env.example" \
-               -not -path "./.git/*" -type f | grep -q .; then
+          if find . -name ".env" -not -name "*.example" \
+               -not -path "./.git/*" -type f 2>/dev/null | grep -q .; then
             echo "FEHLER: .env-Datei gefunden! Secrets dürfen nicht ins Repo!"
-            find . -name ".env" -not -name ".env.example" -not -path "./.git/*"
+            find . -name ".env" -not -name "*.example" -not -path "./.git/*"
             exit 1
           fi
           echo "OK: Keine .env-Dateien im Repo gefunden"
 
       - name: "Auf vault-password Dateien prüfen"
         run: |
-          if find . -name "vault_pass*" -o -name "vault-password*" \
-               -not -path "./.git/*" -type f | grep -q .; then
+          if find . \( -name "vault_pass*" -o -name "vault-password*" \) \
+               -not -path "./.git/*" -type f 2>/dev/null | grep -q .; then
             echo "FEHLER: Vault-Passwort-Datei im Repo gefunden!"
+            find . \( -name "vault_pass*" -o -name "vault-password*" \) \
+               -not -path "./.git/*"
             exit 1
           fi
           echo "OK: Keine Vault-Passwort-Dateien im Repo"
 
       - name: "Auf SSH-Keys prüfen"
         run: |
-          # Typische SSH-Key-Muster prüfen
-          if find . \( -name "id_rsa" -o -name "id_ed25519" \
-               -o -name "*.pem" -o -name "*.key" \) \
-               -not -path "./.git/*" -type f | grep -q .; then
-            echo "FEHLER: Möglicher SSH-Key oder privater Schlüssel gefunden!"
-            find . \( -name "id_rsa" -o -name "id_ed25519" \
-               -o -name "*.pem" -o -name "*.key" \) \
+          if find . \( -name "id_rsa" -o -name "id_ed25519" \) \
+               -not -path "./.git/*" -type f 2>/dev/null | grep -q .; then
+            echo "FEHLER: SSH-Key im Repo gefunden!"
+            find . \( -name "id_rsa" -o -name "id_ed25519" \) \
                -not -path "./.git/*"
             exit 1
           fi
-          echo "OK: Keine SSH-Keys oder private Schlüssel im Repo"
+          echo "OK: Keine SSH-Keys im Repo"

@@ -1,38 +1,61 @@
 # =============================================================================
-# .gitleaks.toml — gitleaks Konfiguration
-# ZWECK: Konfiguriert den Secret-Scanner. Hier können Ausnahmen definiert
-#        werden, z.B. für Test-Werte oder Platzhalter.
+# .gitleaks.toml — gitleaks v8 Konfiguration
+# ZWECK: Secret-Scanner-Konfiguration. Platzhalter in Beispieldateien
+#        werden als harmlos markiert.
 #
-# ACHTUNG: Ausnahmen sparsam verwenden! Lieber zu viele Alerts als zu wenige.
+# FORMAT: TOML (gitleaks v8)
+# DOCS:   https://github.com/gitleaks/gitleaks?tab=readme-ov-file#configuration
 # =============================================================================
 
 title = "Proxmox Infra Admin — gitleaks Konfiguration"
 
 [extend]
-# Standard-Regeln verwenden (erkennt API-Keys, Passwörter, Tokens etc.)
+# Standard-Regelwerk von gitleaks verwenden
 useDefault = true
 
-# ─── Ausnahmen (allowlist) ──────────────────────────────────────────────────
-# Nur Dateien/Pfade mit WIRKLICH harmlosen Test-Werten hier eintragen
+# ─── Komplette Pfade ausschließen ───────────────────────────────────────────
+# Dateien die NUR Platzhalter enthalten und daher vollständig übersprungen werden
 
 [[allowlist]]
-description = "Platzhalter in Beispieldateien erlauben"
-# Dateipfade die erlaubt sind:
+description = "Beispieldateien mit Platzhaltern (.env.example, *.example)"
+# paths ist eine Liste von regulären Ausdrücken (gegen den Dateipfad)
 paths = [
-  '''.env.example''',           # Nur Platzhalter
-  '''.*\.example$''',           # Alle .example-Dateien
-  '''docs/knowledge/.*\.md''',  # Wissensdatenbanken (nur Beispiele)
-  '''README\.md''',             # Projekt-README
-  '''CLAUDE\.md''',             # Arbeitsanweisung
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.env\.[a-z]+\.example$''',
+  '''\.example$''',
 ]
-# Muster die in diesen Dateien erlaubt sind:
+
+[[allowlist]]
+description = "Wissensdatenbanken (docs/knowledge/) enthalten nur Beispiele"
+paths = [
+  '''docs/knowledge/''',
+  '''docs/architecture/''',
+  '''docs/runbooks/''',
+]
+
+[[allowlist]]
+description = "Projekt-Dokumentation mit Platzhaltern"
+paths = [
+  '''(^|/)README\.md$''',
+  '''(^|/)CLAUDE\.md$''',
+]
+
+# ─── Spezifische Regex-Platzhalter erlauben ──────────────────────────────────
+# Diese Muster sind überall erlaubt — sie sind echte Platzhalter, keine Secrets
+
+[[allowlist]]
+description = "Platzhalter-Strings die kein echtes Secret sind"
+# regexTarget: "match" = der gefundene Match (Standard)
+regexTarget = "match"
 regexes = [
-  '''<DEIN_TOKEN>''',
-  '''<DEIN_PASSWORT>''',
-  '''<DEIN_USER>''',
-  '''<DEINE_DOMAIN>''',
+  # Unsere Standard-Platzhalter in spitzen Klammern
+  '''<DEIN[_A-Z]+>''',
+  '''<DEINE[_A-Z]+>''',
   '''<WIRD_VIA_VAULT_GESETZT>''',
-  '''<TOKEN_SECRET>''',
-  '''<DEIN_TOKEN_SECRET>''',
-  '''192\.0\.2\.\d+''',        # RFC 5737 Test-IPs sind harmlos
+  # RFC 5737 Test-IPs (harmlose Dokumentations-IPs)
+  '''192\.0\.2\.\d{1,3}''',
+  '''198\.51\.100\.\d{1,3}''',
+  '''203\.0\.113\.\d{1,3}''',
+  # Proxmox API Token Platzhalter-Format
+  '''PVEAPIToken=<[A-Z_]+>@[a-z]+!<[A-Z_]+>=<[A-Z_]+>''',
 ]

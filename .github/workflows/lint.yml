@@ -6,28 +6,29 @@
 # WAS WIRD GEPRÜFT:
 #   - yamllint: YAML-Syntax und Formatierung
 #   - ansible-lint: Ansible Best Practices und Sicherheit
+#   - shellcheck: Shell-Skripte auf Fehler prüfen
 #
 # WARUM:
 #   Fehler im Playbook sollen erkannt werden, BEVOR man sie auf dem
 #   Produktivsystem ausführt. CI/CD als Sicherheitsnetz.
+#
+# HINWEIS: Jobs überspringen graceful wenn noch keine Dateien vorhanden sind.
 # =============================================================================
 
 name: Ansible Lint + YAML Lint
 
 on:
-  # Bei jedem Push auf main oder develop
   push:
     branches:
       - main
       - develop
       - "feature/**"
-  # Bei Pull Requests
+      - "claude/**"
   pull_request:
     branches:
       - main
       - develop
 
-# Verhindert parallele Läufe auf demselben Branch (spart Ressourcen)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -50,16 +51,29 @@ jobs:
       - name: "yamllint installieren"
         run: pip install yamllint
 
-      - name: "YAML-Dateien prüfen"
+      - name: "YAML-Dateien suchen und prüfen"
         run: |
-          # Alle YAML-Dateien in ansible/ und .github/ prüfen
-          yamllint ansible/ .github/
-        # yamllint Konfiguration: .yamllint.yml (wird separat erstellt)
+          # Alle YAML-Dateien finden (ansible/ und .github/)
+          # Graceful: kein Fehler wenn noch keine YAML-Dateien vorhanden
+          YAML_FILES=$(find ansible/ .github/ -name "*.yml" -o -name "*.yaml" 2>/dev/null | \
+            grep -v '\.gitkeep' | sort)
+
+          if [ -z "$YAML_FILES" ]; then
+            echo "INFO: Noch keine YAML-Dateien in ansible/ — überspringe"
+          else
+            echo "Prüfe folgende YAML-Dateien:"
+            echo "$YAML_FILES"
+            echo "$YAML_FILES" | xargs yamllint -c .yamllint.yml
+          fi
+
+          # .github/ Workflows immer prüfen (existieren immer)
+          echo "Prüfe GitHub Actions Workflows..."
+          yamllint -c .yamllint.yml .github/
 
   ansible-lint:
     name: Ansible Lint
     runs-on: ubuntu-latest
-    needs: yamllint  # Erst YAML-Syntax prüfen, dann Ansible-Regeln
+    needs: yamllint
 
     steps:
       - name: "Repository auschecken"
@@ -80,11 +94,15 @@ jobs:
           ansible-galaxy collection install community.docker
           ansible-galaxy collection install ansible.posix
 
-      - name: "Ansible Playbooks prüfen"
+      - name: "Ansible Playbooks prüfen (wenn vorhanden)"
         run: |
-          # ansible-lint auf das gesamte ansible/ Verzeichnis
-          ansible-lint ansible/
-        # Konfiguration in .ansible-lint (wird separat erstellt)
+          # Prüfen ob Ansible-Playbooks vorhanden sind
+          if find ansible/ -name "*.yml" -type f 2>/dev/null | grep -qv '\.gitkeep'; then
+            echo "Ansible-Dateien gefunden — starte ansible-lint..."
+            ansible-lint ansible/
+          else
+            echo "INFO: Noch keine Ansible-Playbooks vorhanden — überspringe ansible-lint"
+          fi
 
   shell-lint:
     name: Shell Script Lint
@@ -97,8 +115,17 @@ jobs:
       - name: "shellcheck installieren"
         run: sudo apt-get install -y shellcheck
 
-      - name: "Shell-Skripte prüfen"
+      - name: "Shell-Skripte prüfen (wenn vorhanden)"
         run: |
-          # Alle .sh Dateien prüfen
-          find scripts/ proxmox-api/ config/ -name "*.sh" -type f \
-            -exec shellcheck {} \;
+          # Alle .sh Dateien finden — graceful wenn keine vorhanden
+          SHELL_FILES=$(find . \
+            -path './.git' -prune -o \
+            -name "*.sh" -type f -print 2>/dev/null | sort)
+
+          if [ -z "$SHELL_FILES" ]; then
+            echo "INFO: Noch keine Shell-Skripte vorhanden — überspringe shellcheck"
+          else
+            echo "Prüfe folgende Shell-Skripte:"
+            echo "$SHELL_FILES"
+            echo "$SHELL_FILES" | xargs shellcheck
+          fi
