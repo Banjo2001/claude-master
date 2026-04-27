@@ -7,12 +7,6 @@
 #   - yamllint: YAML-Syntax und Formatierung
 #   - ansible-lint: Ansible Best Practices und Sicherheit
 #   - shellcheck: Shell-Skripte auf Fehler prüfen
-#
-# WARUM:
-#   Fehler im Playbook sollen erkannt werden, BEVOR man sie auf dem
-#   Produktivsystem ausführt. CI/CD als Sicherheitsnetz.
-#
-# HINWEIS: Jobs überspringen graceful wenn noch keine Dateien vorhanden sind.
 # =============================================================================
 
 name: Ansible Lint + YAML Lint
@@ -51,24 +45,23 @@ jobs:
       - name: "yamllint installieren"
         run: pip install yamllint
 
-      - name: "YAML-Dateien suchen und prüfen"
+      - name: "GitHub Actions Workflows prüfen (immer)"
+        run: yamllint -c .yamllint.yml .github/
+
+      - name: "Ansible YAML-Dateien prüfen (wenn vorhanden)"
         run: |
-          # Alle YAML-Dateien finden (ansible/ und .github/)
-          # Graceful: kein Fehler wenn noch keine YAML-Dateien vorhanden
-          YAML_FILES=$(find ansible/ .github/ -name "*.yml" -o -name "*.yaml" 2>/dev/null | \
-            grep -v '\.gitkeep' | sort)
+          # WICHTIG: Klammern um -o Alternativen, damit find korrekt sucht!
+          # Ohne Klammern: find sucht *.yaml überall im System, nicht nur in ansible/
+          YAML_FILES=$(find ansible/ \( -name "*.yml" -o -name "*.yaml" \) \
+            -type f ! -name ".gitkeep" 2>/dev/null | sort)
 
           if [ -z "$YAML_FILES" ]; then
-            echo "INFO: Noch keine YAML-Dateien in ansible/ — überspringe"
+            echo "INFO: Noch keine Ansible YAML-Dateien vorhanden — überspringe"
           else
-            echo "Prüfe folgende YAML-Dateien:"
+            echo "Prüfe Ansible YAML-Dateien:"
             echo "$YAML_FILES"
             echo "$YAML_FILES" | xargs yamllint -c .yamllint.yml
           fi
-
-          # .github/ Workflows immer prüfen (existieren immer)
-          echo "Prüfe GitHub Actions Workflows..."
-          yamllint -c .yamllint.yml .github/
 
   ansible-lint:
     name: Ansible Lint
@@ -96,12 +89,11 @@ jobs:
 
       - name: "Ansible Playbooks prüfen (wenn vorhanden)"
         run: |
-          # Prüfen ob Ansible-Playbooks vorhanden sind
-          if find ansible/ -name "*.yml" -type f 2>/dev/null | grep -qv '\.gitkeep'; then
+          if find ansible/ -name "*.yml" -type f ! -name ".gitkeep" 2>/dev/null | grep -q .; then
             echo "Ansible-Dateien gefunden — starte ansible-lint..."
             ansible-lint ansible/
           else
-            echo "INFO: Noch keine Ansible-Playbooks vorhanden — überspringe ansible-lint"
+            echo "INFO: Noch keine Ansible-Playbooks — überspringe ansible-lint"
           fi
 
   shell-lint:
@@ -117,15 +109,13 @@ jobs:
 
       - name: "Shell-Skripte prüfen (wenn vorhanden)"
         run: |
-          # Alle .sh Dateien finden — graceful wenn keine vorhanden
-          SHELL_FILES=$(find . \
-            -path './.git' -prune -o \
+          SHELL_FILES=$(find . -path './.git' -prune -o \
             -name "*.sh" -type f -print 2>/dev/null | sort)
 
           if [ -z "$SHELL_FILES" ]; then
-            echo "INFO: Noch keine Shell-Skripte vorhanden — überspringe shellcheck"
+            echo "INFO: Noch keine Shell-Skripte — überspringe shellcheck"
           else
-            echo "Prüfe folgende Shell-Skripte:"
+            echo "Prüfe Shell-Skripte:"
             echo "$SHELL_FILES"
             echo "$SHELL_FILES" | xargs shellcheck
           fi
