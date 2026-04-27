@@ -1,0 +1,109 @@
+# =============================================================================
+# .gitignore — Proxmox Infra Admin Repository
+# ZWECK: Verhindert, dass sensible Daten versehentlich ins Repository gelangen.
+#
+# REGEL: Im Zweifelsfall lieber zu viel hier eintragen als zu wenig.
+# Secrets im Git-Verlauf sind NICHT mehr sicher, selbst wenn gelöscht!
+# =============================================================================
+
+# --- Secrets & Credentials ---
+# Niemals echte Schlüssel, Passwörter oder Tokens einchecken!
+.env
+*.env.*
+*.env
+.env.local
+.env.production
+.env.staging
+
+# SSH-Schlüssel
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+id_ecdsa
+id_ecdsa.*
+*.pub
+known_hosts
+
+# Ansible Vault Passwortdatei (liegt AUSSERHALB des Repos — nur zur Sicherheit)
+vault-password.txt
+vault_pass*
+vault_password*
+.vault_pass*
+
+# Ansible Vault-verschlüsselte Dateien (Platzhalter — werden im Repo gehalten,
+# aber als verschlüsselte vault.yml — Rohdaten hier ausschließen)
+secrets.yml
+secrets*.yml
+
+# Terraform State (enthält oft Secrets!)
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+.terraform/
+.terraform.lock.hcl
+
+# --- Daten & Volumes ---
+# Keine Docker-Volumes, Datenbanken oder Backup-Daten ins Repo
+data/
+volumes/
+backups/
+dumps/
+*.sql
+*.sql.gz
+*.dump
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+.env/
+*.egg-info/
+dist/
+build/
+
+# --- Ansible Cache & Tmp ---
+.ansible/
+*.retry
+ansible/.cache/
+
+# --- Claude Code ---
+.claude/cache/
+.claude/tmp/
+
+# --- Editor & OS ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V500
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/settings.json
+*.iml
+
+# --- Logs ---
+*.log
+logs/
+log/
+
+# --- Temporäre Dateien ---
+*.tmp
+*.temp
+tmp/
+temp/

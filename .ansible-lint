@@ -1,0 +1,33 @@
+# =============================================================================
+# .ansible-lint — ansible-lint Konfiguration
+# ZWECK: Regeln für ansible-lint — prüft Ansible Best Practices
+# =============================================================================
+
+# Profile: moderate ist ein guter Kompromiss zwischen Strenge und Praxistauglichkeit
+profile: moderate
+
+# Verzeichnisse ausschließen
+exclude_paths:
+  - .git/
+  - .ansible/
+  - docs/
+
+# Regeln die wir deaktivieren (mit Begründung):
+skip_list:
+  # yaml[truthy]: Wir prüfen das bereits in yamllint
+  # - yaml[truthy]
+
+  # no-changed-when: Manchmal unvermeidbar bei Shell-Tasks
+  - no-changed-when
+
+warn_list:
+  # Diese Regeln erzeugen Warnungen, keine Fehler
+  - yaml[line-length]
+  - experimental
+
+# Minimale Ansible-Version
+min_ansible_version: "2.17"
+
+# FQCN (Fully Qualified Collection Name) erzwingen
+# z.B. ansible.builtin.apt statt nur apt
+use_default_rules: true

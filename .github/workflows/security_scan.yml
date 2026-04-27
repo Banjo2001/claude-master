@@ -1,0 +1,101 @@
+# =============================================================================
+# DATEI:    .github/workflows/security_scan.yml
+# ZWECK:    Scannt das Repository auf versehentlich eingecheckte Secrets
+#           bei jedem Push und Pull Request.
+#
+# TOOLS:
+#   - gitleaks: Erkennt Passwörter, API-Keys, Zertifikate etc. in Git-Commits
+#
+# WARUM:
+#   Auch mit .gitignore können Secrets versehentlich committet werden.
+#   gitleaks als automatische Kontrolle verhindert diesen Worst Case.
+#
+# BEI ALARM:
+#   1. Den gemeldeten Commit und Pfad prüfen
+#   2. Secret sofort rotieren (neu generieren)
+#   3. Secret aus Git-Historie entfernen (git-filter-repo)
+#   4. Force-Push (nur wenn unbedingt nötig)
+# =============================================================================
+
+name: Secret Scan (gitleaks)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+  # Auch regelmäßig scannen (frühzeitig erkennen)
+  schedule:
+    # Jeden Montag um 04:00 Uhr UTC
+    - cron: "0 4 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Repository auschecken (vollständige Historie für Scan)"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Vollständige Git-Historie laden (für Historic-Scan)
+
+      - name: "gitleaks Secret Scan ausführen"
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Konfiguration in .gitleaks.toml (optional, für Ausnahmen)
+          config-path: .gitleaks.toml
+
+  # Zusätzlicher Scan: Prüfe ob .env-Dateien ins Repo gelangt sind
+  env-file-check:
+    name: Check für .env-Dateien im Repo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "Auf .env-Dateien prüfen"
+        run: |
+          # Prüfe ob echte .env-Dateien (nicht .env.example) im Repo sind
+          if find . -name ".env" -not -name ".env.example" \
+               -not -path "./.git/*" -type f | grep -q .; then
+            echo "FEHLER: .env-Datei gefunden! Secrets dürfen nicht ins Repo!"
+            find . -name ".env" -not -name ".env.example" -not -path "./.git/*"
+            exit 1
+          fi
+          echo "OK: Keine .env-Dateien im Repo gefunden"
+
+      - name: "Auf vault-password Dateien prüfen"
+        run: |
+          if find . -name "vault_pass*" -o -name "vault-password*" \
+               -not -path "./.git/*" -type f | grep -q .; then
+            echo "FEHLER: Vault-Passwort-Datei im Repo gefunden!"
+            exit 1
+          fi
+          echo "OK: Keine Vault-Passwort-Dateien im Repo"
+
+      - name: "Auf SSH-Keys prüfen"
+        run: |
+          # Typische SSH-Key-Muster prüfen
+          if find . \( -name "id_rsa" -o -name "id_ed25519" \
+               -o -name "*.pem" -o -name "*.key" \) \
+               -not -path "./.git/*" -type f | grep -q .; then
+            echo "FEHLER: Möglicher SSH-Key oder privater Schlüssel gefunden!"
+            find . \( -name "id_rsa" -o -name "id_ed25519" \
+               -o -name "*.pem" -o -name "*.key" \) \
+               -not -path "./.git/*"
+            exit 1
+          fi
+          echo "OK: Keine SSH-Keys oder private Schlüssel im Repo"

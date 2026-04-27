@@ -1,0 +1,38 @@
+# =============================================================================
+# .gitleaks.toml — gitleaks Konfiguration
+# ZWECK: Konfiguriert den Secret-Scanner. Hier können Ausnahmen definiert
+#        werden, z.B. für Test-Werte oder Platzhalter.
+#
+# ACHTUNG: Ausnahmen sparsam verwenden! Lieber zu viele Alerts als zu wenige.
+# =============================================================================
+
+title = "Proxmox Infra Admin — gitleaks Konfiguration"
+
+[extend]
+# Standard-Regeln verwenden (erkennt API-Keys, Passwörter, Tokens etc.)
+useDefault = true
+
+# ─── Ausnahmen (allowlist) ──────────────────────────────────────────────────
+# Nur Dateien/Pfade mit WIRKLICH harmlosen Test-Werten hier eintragen
+
+[[allowlist]]
+description = "Platzhalter in Beispieldateien erlauben"
+# Dateipfade die erlaubt sind:
+paths = [
+  '''.env.example''',           # Nur Platzhalter
+  '''.*\.example$''',           # Alle .example-Dateien
+  '''docs/knowledge/.*\.md''',  # Wissensdatenbanken (nur Beispiele)
+  '''README\.md''',             # Projekt-README
+  '''CLAUDE\.md''',             # Arbeitsanweisung
+]
+# Muster die in diesen Dateien erlaubt sind:
+regexes = [
+  '''<DEIN_TOKEN>''',
+  '''<DEIN_PASSWORT>''',
+  '''<DEIN_USER>''',
+  '''<DEINE_DOMAIN>''',
+  '''<WIRD_VIA_VAULT_GESETZT>''',
+  '''<TOKEN_SECRET>''',
+  '''<DEIN_TOKEN_SECRET>''',
+  '''192\.0\.2\.\d+''',        # RFC 5737 Test-IPs sind harmlos
+]

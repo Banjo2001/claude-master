@@ -1,0 +1,104 @@
+# =============================================================================
+# DATEI:    .github/workflows/lint.yml
+# ZWECK:    Prüft Ansible-Dateien und YAML auf Syntax und Best Practices
+#           bei jedem Push und Pull Request.
+#
+# WAS WIRD GEPRÜFT:
+#   - yamllint: YAML-Syntax und Formatierung
+#   - ansible-lint: Ansible Best Practices und Sicherheit
+#
+# WARUM:
+#   Fehler im Playbook sollen erkannt werden, BEVOR man sie auf dem
+#   Produktivsystem ausführt. CI/CD als Sicherheitsnetz.
+# =============================================================================
+
+name: Ansible Lint + YAML Lint
+
+on:
+  # Bei jedem Push auf main oder develop
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  # Bei Pull Requests
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# Verhindert parallele Läufe auf demselben Branch (spart Ressourcen)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yamllint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "Python einrichten"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: "yamllint installieren"
+        run: pip install yamllint
+
+      - name: "YAML-Dateien prüfen"
+        run: |
+          # Alle YAML-Dateien in ansible/ und .github/ prüfen
+          yamllint ansible/ .github/
+        # yamllint Konfiguration: .yamllint.yml (wird separat erstellt)
+
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    needs: yamllint  # Erst YAML-Syntax prüfen, dann Ansible-Regeln
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "Python einrichten"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: "ansible-lint installieren"
+        run: pip install ansible-lint
+
+      - name: "Ansible Collections installieren"
+        run: |
+          ansible-galaxy collection install community.general
+          ansible-galaxy collection install community.docker
+          ansible-galaxy collection install ansible.posix
+
+      - name: "Ansible Playbooks prüfen"
+        run: |
+          # ansible-lint auf das gesamte ansible/ Verzeichnis
+          ansible-lint ansible/
+        # Konfiguration in .ansible-lint (wird separat erstellt)
+
+  shell-lint:
+    name: Shell Script Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "shellcheck installieren"
+        run: sudo apt-get install -y shellcheck
+
+      - name: "Shell-Skripte prüfen"
+        run: |
+          # Alle .sh Dateien prüfen
+          find scripts/ proxmox-api/ config/ -name "*.sh" -type f \
+            -exec shellcheck {} \;

@@ -1,0 +1,54 @@
+# =============================================================================
+# .yamllint.yml — YAML Lint Konfiguration
+# ZWECK: Regeln für yamllint — prüft YAML-Syntax und Formatierung
+# =============================================================================
+
+extends: default
+
+rules:
+  # Zeilenlänge: 120 Zeichen erlaubt (für Ansible etwas großzügiger)
+  line-length:
+    max: 120
+    level: warning  # Nur Warnung, kein Fehler
+
+  # Kommentare müssen Leerzeichen nach # haben
+  comments:
+    min-spaces-from-content: 1
+
+  # Einrückung: 2 Leerzeichen (Standard für YAML)
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # Leere Zeilen: max. 2 hintereinander
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 1
+
+  # Wahrheitswerte: true/false statt yes/no (ansible-lint Anforderung)
+  truthy:
+    allowed-values:
+      - 'true'
+      - 'false'
+    check-keys: false
+
+  # Dokument-Start (---) ist nicht zwingend erforderlich
+  document-start:
+    present: false
+
+  # Leerzeichen vor und nach Doppelpunkt
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
+
+  # Braces (Klammern): Leerzeichen innen
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+ignore: |
+  .git/
+  .ansible/
+  *.example
