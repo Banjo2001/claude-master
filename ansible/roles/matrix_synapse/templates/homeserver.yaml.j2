@@ -12,6 +12,7 @@ web_client_location: https://element.io
 
 # ─── Listeners ────────────────────────────────────────────────────────────────
 listeners:
+  # Client- und Federation-API (über Nginx erreichbar, kein direktes TLS)
   - port: 8008
     tls: false
     type: http
@@ -23,6 +24,12 @@ listeners:
           - client
           - federation
         compress: false
+
+  # Prometheus Metriken — nur intern, NIEMALS öffentlich!
+  - port: 9092
+    type: metrics
+    bind_addresses:
+      - "127.0.0.1"
 
 # ─── Datenbank ────────────────────────────────────────────────────────────────
 # PostgreSQL statt SQLite (PFLICHT für Produktion)
@@ -44,11 +51,30 @@ redis:
   host: "{{ matrix_redis_host }}"
   port: "{{ matrix_redis_port }}"
 
-# ─── Logging ─────────────────────────────────────────────────────────────────
-log_config: "/config/log.config"
+# ─── Logging (Docker-freundlich: stdout) ──────────────────────────────────────
+# WARUM kein log_config: In Docker wird stdout bevorzugt (docker logs).
+# log_config würde eine externe Datei erfordern, die nicht gemountet ist.
+logging:
+  version: 1
+  formatters:
+    precise:
+      format: "%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(request)s - %(message)s"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: precise
+  loggers:
+    synapse.storage.SQL:
+      level: WARNING
+  root:
+    level: WARNING
+    handlers:
+      - console
+  disable_existing_loggers: false
 
 # ─── Media ───────────────────────────────────────────────────────────────────
-media_store_path: /media_store
+# WARUM /data/media_store: compose.yml mountet matrix_data_dir/synapse → /data
+media_store_path: /data/media_store
 max_upload_size: "{{ matrix_nginx_client_max_body_size }}"
 
 # ─── Registrierung ────────────────────────────────────────────────────────────
@@ -63,6 +89,7 @@ macaroon_secret_key: "{{ vault_matrix_macaroon_secret_key }}"
 form_secret: "{{ vault_matrix_macaroon_secret_key }}"
 
 # ─── Signing Key ─────────────────────────────────────────────────────────────
+# WARUM /data/: compose.yml mountet matrix_data_dir/synapse → /data (persistent)
 signing_key_path: "/data/{{ matrix_server_name }}.signing.key"
 
 # ─── Trusted Key Servers ─────────────────────────────────────────────────────
@@ -79,5 +106,5 @@ turn_user_lifetime: 86400000
 turn_allow_guests: false
 
 # ─── Metriken (Prometheus) ────────────────────────────────────────────────────
+# Listener ist oben unter "Listeners" definiert (Port 9092, nur localhost)
 enable_metrics: true
-metrics_port: 9092

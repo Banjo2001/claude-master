@@ -304,6 +304,66 @@ IFS=$'\n\t'
 
 ---
 
+### 2026-04-28 — Phasen 2–5 + Doku + Korrektheitsprüfung (Claude Code Session)
+
+**Phase 2: Setup-Skripte**
+- `scripts/setup/00_preflight_check.sh` — Prüft Voraussetzungen
+- `scripts/setup/01_install_claude_code.sh` — Installiert Claude Code
+- `scripts/setup/02_configure_git.sh` — Git + gitleaks v8.21.2 Setup
+- `scripts/setup/03_init_ansible_vault.sh` — Ansible Vault initialisieren
+
+**Phase 2: Proxmox API Bibliotheken**
+- `proxmox-api/lib/pve_api.sh` — PVE REST API Shell-Bibliothek
+- `proxmox-api/lib/pbs_api.sh` — PBS REST API Shell-Bibliothek
+- `proxmox-api/examples/` — list_vms.sh, snapshot_create.sh, pbs_backup_verify.sh
+
+**Phase 2: CI/CD**
+- `.github/workflows/lint.yml` — YAML Lint + Shell Lint + Ansible Lint
+- `.github/workflows/security_scan.yml` — gitleaks Secret-Scan
+- `.yamllint.yml`, `.ansible-lint`, `.gitleaks.toml` — CI-Konfiguration
+
+**Phase 3: Ansible-Rollen**
+- `ansible/roles/common/` — Basis: Updates, Zeitzone, SSH, UFW, Fail2Ban, sysctl
+- `ansible/roles/docker/` — Docker CE Installation
+- `ansible/roles/matrix_synapse/` — Vollständiger Matrix-Stack
+  - templates: compose.yml.j2, homeserver.yaml.j2, nginx.conf.j2, coturn.conf.j2
+- `ansible/roles/nextcloud_aio/` — Nextcloud AIO Deploy
+- `ansible/playbooks/` — site.yml, common.yml, docker.yml, matrix_synapse.yml, nextcloud_aio.yml
+
+**Phase 4: Docker-Referenz**
+- `docker/matrix-synapse/{compose.yml,.env.example}`
+- `docker/nextcloud-aio/{compose.yml,.env.example}`
+
+**Phase 5: Skripte**
+- `scripts/security/` — harden_ssh, setup_fail2ban, setup_ufw, audit_secrets, system_audit, rotate_vault_password
+- `scripts/proxmox/` — pve_status_report, pve_snapshot_create/rollback, pbs_verify_backups
+- `scripts/monitoring/` — check_services, check_disk_usage, check_ssl_certs
+- `scripts/backup/` — backup_configs, backup_test_restore, cleanup_old_backups
+- `config/` — sshd_hardened.conf, jail.local, ufw_rules.sh, 99-hardening.conf
+
+**Dokumentation**
+- `docs/architecture/overview.md` — Gesamtarchitektur, Komponenten, Sicherheit
+- `docs/architecture/network_layout.md` — Ports, DNS, Docker-Netzwerke, Firewall
+- `docs/architecture/deployment_sequence.md` — Schritt-für-Schritt Erstdeploy
+- `docs/runbooks/matrix_admin.md` — Matrix Verwaltung, Updates, Admin-User
+- `docs/runbooks/nextcloud_admin.md` — Nextcloud AIO Verwaltung, occ-Befehle
+- `docs/runbooks/backup_restore.md` — PBS, Snapshots, Konfigurations-Backups
+- `docs/runbooks/proxmox_maintenance.md` — Proxmox Wartung, Updates, Snapshots
+- `docs/runbooks/incident_response.md` — SSH-Angriff, Kompromittierung, Secret-Leak
+
+**Bugfixes (Korrektheitsprüfung)**
+- `matrix_db_host: "postgres"` (war: "localhost" — würde in Docker scheitern)
+- `matrix_redis_host: "redis"` (war: "localhost" — würde in Docker scheitern)
+- Redis `bind 0.0.0.0` (war: 127.0.0.1 — Synapse-Container hätte keinen Zugriff)
+- `init_postgres.sql`: kein doppeltes CREATE DATABASE mehr (POSTGRES_DB macht das)
+- `coturn.conf.j2`: `no-auth` entfernt (widersprach `use-auth-secret`)
+- `coturn.conf.j2`: Zertifikat-Pfad korrigiert (`/etc/ssl/live/<DOMAIN>/fullchain.pem`)
+- `homeserver.yaml.j2`: `media_store_path: /data/media_store` (war: /media_store)
+- `homeserver.yaml.j2`: `log_config` entfernt, Docker-freundliches stdout-Logging
+- `homeserver.yaml.j2`: Metriken-Listener korrekt definiert (war: veraltetes metrics_port)
+
+---
+
 *Stand: 2026-04 — Proxmox VE 9.x, PBS 4.x, Debian 13, Ubuntu 24.04*
 *Diese Datei wird mit dem Repo versioniert.*
 *Unterer Abschnitt (Changelog) bei jeder Sitzung aktualisieren.*
