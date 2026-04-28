@@ -1,0 +1,27 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/nextcloud_aio/tasks/main.yml
+# ZWECK:        Nextcloud AIO (All-in-One) Mastercontainer deployen
+# ABLAUF:       Verzeichnisse → Firewall → Netzwerk → Container starten
+# KRITISCH:     Container-Name nextcloud-aio-mastercontainer DARF NICHT
+#               geändert werden — AIO nutzt ihn intern für den Updatemanager!
+# =============================================================================
+
+# WARUM: Jeder Schritt in eigener Task-Datei für bessere Lesbarkeit
+- name: "Nextcloud AIO — Verzeichnisse erstellen"
+  ansible.builtin.import_tasks: directories.yml
+  tags:
+    - nextcloud
+    - nextcloud_dirs
+
+- name: "Nextcloud AIO — UFW-Regeln setzen"
+  ansible.builtin.import_tasks: firewall.yml
+  tags:
+    - nextcloud
+    - nextcloud_firewall
+
+- name: "Nextcloud AIO — Docker-Netzwerk und Container deployen"
+  ansible.builtin.import_tasks: compose.yml
+  tags:
+    - nextcloud
+    - nextcloud_compose

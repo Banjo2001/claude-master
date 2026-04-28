@@ -1,0 +1,47 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/nextcloud_aio/defaults/main.yml
+# ZWECK:        Standard-Werte für die Nextcloud AIO Rolle
+# SICHERHEIT:   NIEMALS echte Secrets hier eintragen! Nur Platzhalter.
+# =============================================================================
+
+# ─── Nextcloud Domain ────────────────────────────────────────────────────────
+nextcloud_domain: "<DEINE_NEXTCLOUD_DOMAIN>"
+
+# ─── Verzeichnisse ────────────────────────────────────────────────────────────
+nextcloud_base_dir: "/opt/nextcloud-aio"
+nextcloud_data_dir: "{{ nextcloud_base_dir }}/data"
+
+# ─── Docker-Image ─────────────────────────────────────────────────────────────
+# AUSNAHME: AIO Mastercontainer darf :latest verwenden!
+# Begründung: Das ist der Updatemanager — er zieht die versionierten Images selbst.
+# Andere Images werden vom AIO-Stack automatisch mit festen Versionen verwaltet.
+nextcloud_aio_image: "nextcloud/all-in-one:latest"
+
+# ─── Containername ────────────────────────────────────────────────────────────
+# KRITISCH: Dieser Name DARF NICHT geändert werden!
+# AIO nutzt diesen Namen intern für den Update-Mechanismus.
+nextcloud_aio_container_name: "nextcloud-aio-mastercontainer"
+
+# ─── Ports ────────────────────────────────────────────────────────────────────
+# Port 8080: Admin-Interface (NUR über IP, NIEMALS über Domain!)
+# Port 8443: Nextcloud HTTPS (über Domain erreichbar)
+nextcloud_admin_port: 8080
+nextcloud_https_port: 8443
+
+# ─── Upload und Performance-Limits ────────────────────────────────────────────
+# WARUM: AIO übergibt diese Werte an Apache und PHP im Subcontainer.
+# upload_limit: maximale Upload-Dateigröße
+# max_time: PHP max_execution_time in Sekunden
+# memory_limit: PHP memory_limit
+nextcloud_upload_limit: "10G"
+nextcloud_max_time: "3600"
+nextcloud_memory_limit: "512M"
+
+# ─── Zeitzone ────────────────────────────────────────────────────────────────
+nextcloud_timezone: "Europe/Berlin"
+
+# ─── UFW-Quellen für Admin-Port ──────────────────────────────────────────────
+# Admin-Interface nur von Management-IPs erreichbar!
+nextcloud_admin_allowed_sources:
+  - "192.0.2.10"

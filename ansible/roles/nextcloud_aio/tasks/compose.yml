@@ -1,0 +1,37 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/nextcloud_aio/tasks/compose.yml
+# ZWECK:        Docker-Netzwerk erstellen und AIO Mastercontainer starten
+# KRITISCH:     Das Docker-Netzwerk "nextcloud-aio" MUSS vor dem Container
+#               existieren — AIO erwartet es mit exakt diesem Namen.
+# ROLLBACK:     docker compose -f {{ nextcloud_base_dir }}/compose.yml down
+#               docker network rm nextcloud-aio
+# =============================================================================
+
+# WARUM: Das Netzwerk "nextcloud-aio" muss vor dem Container existieren.
+# AIO legt interne Container in dieses Netzwerk. Nicht per Compose verwaltbar,
+# da AIO selbst Container spawnt die das Netzwerk nutzen.
+- name: "Nextcloud — Docker-Netzwerk 'nextcloud-aio' erstellen"
+  community.docker.docker_network:
+    name: nextcloud-aio
+    state: present
+
+# WARUM: compose.yml aus Template generieren — enthält alle Variablen.
+# ROLLBACK: Alte compose.yml ist im Git; einfach zurücksetzen.
+- name: "Nextcloud — compose.yml aus Template generieren"
+  ansible.builtin.template:
+    src: compose.yml.j2
+    dest: "{{ nextcloud_base_dir }}/compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+    validate: "docker compose -f %s config --quiet"
+  notify: restart_nextcloud
+
+# WARUM: Mastercontainer starten — er verwaltet alle anderen Nextcloud-Container
+# selbst via Docker-Socket. Erster Start lädt alle Sub-Images herunter.
+- name: "Nextcloud — AIO Mastercontainer starten"
+  community.docker.docker_compose_v2:
+    project_src: "{{ nextcloud_base_dir }}"
+    state: present
+    pull: always

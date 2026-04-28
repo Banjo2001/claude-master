@@ -1,0 +1,100 @@
+# =============================================================================
+# DATEI:        config/fail2ban/jail.local
+# ZWECK:        Fail2Ban Konfiguration — Brute-Force-Schutz
+# EINBINDEN:    cp jail.local /etc/fail2ban/jail.local && systemctl restart fail2ban
+# TESTEN:       fail2ban-client status
+# ROLLBACK:     systemctl stop fail2ban && rm /etc/fail2ban/jail.local
+# =============================================================================
+
+[DEFAULT]
+# ─── Allgemeine Einstellungen ─────────────────────────────────────────────────
+# Wie lange wird eine IP gesperrt (in Sekunden: 3600 = 1 Stunde)
+bantime = 3600
+
+# Zeitfenster für die Zählung von Fehlversuchen (600s = 10 Minuten)
+findtime = 600
+
+# Maximale Fehlversuche innerhalb findtime
+maxretry = 5
+
+# Backend für Log-Überwachung (auto = systemd wenn verfügbar, sonst polling)
+backend = auto
+
+# Benachrichtigungs-E-Mail (ANPASSEN!)
+destemail = root@localhost
+sendername = Fail2Ban
+mta = sendmail
+
+# Standard-Aktion: Bannen + Firewall-Regel (kein E-Mail-Spam standardmäßig)
+action = %(action_)s
+
+# ─── Whitelist ────────────────────────────────────────────────────────────────
+# ANPASSEN: Management-IPs nie sperren
+# RFC 5737 Platzhalter-IP — ersetzen mit echter Management-IP!
+ignoreip = 127.0.0.1/8 ::1 192.0.2.10
+
+# =============================================================================
+# ─── SSH ─────────────────────────────────────────────────────────────────────
+# =============================================================================
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = %(sshd_log)s
+maxretry = 3
+# SSH: Schon nach 3 Versuchen sperren (strenger als Default)
+bantime = 7200
+# SSH-Bans sehr lang halten — legitime Admins haben Keys, kein Grund für viele Versuche
+
+# =============================================================================
+# ─── Nginx ───────────────────────────────────────────────────────────────────
+# =============================================================================
+[nginx-http-auth]
+enabled = true
+port = http,https
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
+
+[nginx-botsearch]
+enabled = true
+port = http,https
+filter = nginx-botsearch
+logpath = /var/log/nginx/access.log
+maxretry = 2
+
+# =============================================================================
+# ─── Matrix Synapse ──────────────────────────────────────────────────────────
+# =============================================================================
+# WARUM: Matrix-Login-Endpunkt vor Bruteforce schützen.
+# Synapse hat eigenen Rate-Limiter, aber Fail2Ban als zweite Schicht ist gut.
+[matrix-synapse]
+enabled = true
+port = http,https
+filter = matrix-synapse
+logpath = /opt/matrix/data/logs/synapse/homeserver.log
+maxretry = 5
+findtime = 600
+bantime = 3600
+
+# =============================================================================
+# ─── Nextcloud ───────────────────────────────────────────────────────────────
+# =============================================================================
+[nextcloud]
+enabled = true
+port = http,https
+filter = nextcloud
+logpath = /opt/nextcloud-aio/data/nextcloud.log
+maxretry = 5
+findtime = 600
+bantime = 3600
+
+# =============================================================================
+# ─── Proxmox VE ──────────────────────────────────────────────────────────────
+# =============================================================================
+[proxmox]
+enabled = true
+port = 8006
+filter = proxmox
+logpath = /var/log/daemon.log
+maxretry = 3
+bantime = 7200

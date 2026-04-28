@@ -1,0 +1,19 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/nextcloud_aio/tasks/directories.yml
+# ZWECK:        Verzeichnisstruktur für Nextcloud AIO erstellen
+# ROLLBACK:     rm -rf {{ nextcloud_base_dir }}
+# =============================================================================
+
+# WARUM: Zentrale Verzeichnisse müssen vor dem Container existieren.
+# AIO verwaltet interne Verzeichnisse selbst — wir legen nur die Basis an.
+- name: "Nextcloud — Basisverzeichnisse erstellen"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - "{{ nextcloud_base_dir }}"
+    - "{{ nextcloud_data_dir }}"
