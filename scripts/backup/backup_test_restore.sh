@@ -26,8 +26,10 @@ log_fail()    { echo -e "${RED}  [FAIL]${NC}  $*"; }
 log_info()    { echo -e "  [INFO]  $*"; }
 log_section() { echo -e "\n${CYAN}━━━ $* ━━━${NC}"; }
 
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly REPO_ROOT
 
 FAILURES=0
 WARNINGS=0
@@ -98,9 +100,9 @@ PBS_API="${REPO_ROOT}/proxmox-api/lib/pbs_api.sh"
 ENV_FILE="${REPO_ROOT}/.env"
 
 if [[ -f "${ENV_FILE}" && -f "${PBS_API}" ]]; then
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1090
     source "${ENV_FILE}"
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1090
     source "${PBS_API}"
 
     if pbs_api_test &>/dev/null; then

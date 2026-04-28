@@ -27,8 +27,10 @@ log_warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 log_section() { echo -e "\n${CYAN}━━━ $* ━━━${NC}"; }
 
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly REPO_ROOT
 readonly VAULT_FILE="${REPO_ROOT}/ansible/inventories/prod/group_vars/all/vault.yml"
 readonly VAULT_PASS_FILE="${HOME}/.vault_pass.txt"
 readonly NEW_VAULT_PASS_FILE="${HOME}/.vault_pass_new.txt"

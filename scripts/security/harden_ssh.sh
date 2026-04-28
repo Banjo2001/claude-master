@@ -37,7 +37,8 @@ fi
 readonly SSHD_CONFIG="/etc/ssh/sshd_config"
 readonly SSHD_HARDENED_DIR="/etc/ssh/sshd_config.d"
 readonly HARDENED_CONF="${SSHD_HARDENED_DIR}/99-hardened.conf"
-readonly BACKUP="${SSHD_CONFIG}.bak.$(date +%F)"
+BACKUP="${SSHD_CONFIG}.bak.$(date +%F)"
+readonly BACKUP
 
 log_section "SSH-Hardening"
 

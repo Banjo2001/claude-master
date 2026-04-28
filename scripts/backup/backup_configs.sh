@@ -23,7 +23,8 @@ log_section() { echo -e "\n${CYAN}━━━ $* ━━━${NC}"; }
 
 # ─── Konfiguration ────────────────────────────────────────────────────────────
 readonly BACKUP_DIR="${1:-/opt/backups/configs}"
-readonly TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+readonly TIMESTAMP
 readonly ARCHIVE="${BACKUP_DIR}/config-backup-${TIMESTAMP}.tar.gz"
 
 # Zu sichernde Pfade (nur Konfigurationen, keine Daten!)

@@ -9,7 +9,7 @@
 
 # WARUM: Port 8443 für Nextcloud HTTPS muss öffentlich erreichbar sein.
 # Alle anderen Ports sind intern oder nur für Management.
-- name: "Nextcloud — UFW: HTTPS-Port {{ nextcloud_https_port }} freigeben"
+- name: "Nextcloud — UFW: HTTPS-Port freigeben ({{ nextcloud_https_port }})"
   community.general.ufw:
     rule: allow
     port: "{{ nextcloud_https_port }}"
@@ -18,7 +18,7 @@
 
 # WARUM: Admin-Interface (Port 8080) darf NUR über IP, niemals über Domain
 # erreichbar sein. Zugangsbeschränkung auf Management-IPs ist Pflicht.
-- name: "Nextcloud — UFW: Admin-Port {{ nextcloud_admin_port }} für Management-IPs"
+- name: "Nextcloud — UFW: Admin-Port für Management-IPs ({{ nextcloud_admin_port }})"
   community.general.ufw:
     rule: allow
     port: "{{ nextcloud_admin_port }}"

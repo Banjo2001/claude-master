@@ -32,8 +32,10 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 # ─── Pfade ────────────────────────────────────────────────────────────────────
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly REPO_ROOT
 readonly JAIL_SOURCE="${REPO_ROOT}/config/fail2ban/jail.local"
 readonly JAIL_DEST="/etc/fail2ban/jail.local"
 

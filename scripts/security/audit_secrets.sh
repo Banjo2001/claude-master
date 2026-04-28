@@ -27,8 +27,10 @@ log_error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 log_section() { echo -e "\n${CYAN}━━━ $* ━━━${NC}"; }
 
 # ─── Konfiguration ────────────────────────────────────────────────────────────
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="${1:-$(cd "${SCRIPT_DIR}/../.." && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+REPO_ROOT="${1:-$(cd "${SCRIPT_DIR}/../.." && pwd)}"
+readonly REPO_ROOT
 readonly GITLEAKS_CONF="${REPO_ROOT}/.gitleaks.toml"
 
 log_section "Secret-Audit mit gitleaks"
