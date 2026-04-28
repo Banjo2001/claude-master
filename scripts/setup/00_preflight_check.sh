@@ -147,7 +147,7 @@ if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
     log_ok "ANTHROPIC_API_KEY: gesetzt ($KEY_PREVIEW...)"
 else
     log_fail "ANTHROPIC_API_KEY: nicht gesetzt!"
-    log_info "Setzen mit: export ANTHROPIC_API_KEY='sk-ant-...'"
+    log_info "Setzen mit: export ANTHROPIC_API_KEY='<DEIN_API_KEY>'"
     log_info "Dauerhaft: echo 'export ANTHROPIC_API_KEY=...' >> ~/.bashrc"
 fi
 
