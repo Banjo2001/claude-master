@@ -1,0 +1,60 @@
+---
+# =============================================================================
+# vars.yml — Nicht-sensitive Ansible-Variablen
+# ZWECK:    Konfiguration ohne Secrets — alle ANPASSEN-Felder müssen ausgefüllt
+#           werden bevor Ansible ausgeführt wird.
+# SECRETS:  Gehören in vault.yml (ansible-vault verschlüsselt)
+#           Erstellen: scripts/setup/03_init_ansible_vault.sh
+#
+# HINWEIS:  Docker-interne Werte (z.B. matrix_db_host: "postgres") stehen
+#           korrekt in den Rollen-Defaults und DÜRFEN HIER NICHT überschrieben
+#           werden — sonst würde Docker scheitern!
+# =============================================================================
+
+# ─── Allgemein ───────────────────────────────────────────────────────────────
+# Zeitzone des Servers
+timezone: "Europe/Berlin"
+locale: "de_DE.UTF-8"
+
+# ─── Proxmox VE ──────────────────────────────────────────────────────────────
+# ANPASSEN: IP oder Hostname des Proxmox-VE-Hosts
+pve_host: "<PVE-HOST-IP>"
+pve_port: 8006
+
+# ─── Proxmox Backup Server ───────────────────────────────────────────────────
+# ANPASSEN: IP oder Hostname des PBS-Hosts
+pbs_host: "<PBS-HOST-IP>"
+pbs_port: 8007
+pbs_datastore: "<PBS-DATASTORE-NAME>"
+
+# ─── Matrix Synapse ──────────────────────────────────────────────────────────
+# KRITISCH: matrix_domain bestimmt die Matrix-Server-ID (nach Deploy NICHT mehr
+#           änderbar! Bestimmt Benutzernamen: @user:matrix_domain)
+# ANPASSEN: Beispiel: "example.com" → Nutzer: @alice:example.com
+matrix_domain: "<DEINE_DOMAIN>"
+
+# Let's Encrypt E-Mail (für Ablauf-Benachrichtigungen)
+# ANPASSEN:
+matrix_letsencrypt_email: "<DEINE_EMAIL>"
+
+# ─── Nextcloud AIO ───────────────────────────────────────────────────────────
+# ANPASSEN: Subdomain für Nextcloud (z.B. cloud.example.com)
+nextcloud_domain: "<cloud.DEINE_DOMAIN>"
+
+# ─── SSH-Härtung ─────────────────────────────────────────────────────────────
+# SSH-Port (Standard: 22 — ändern erhöht Sicherheit minimal)
+ssh_port: 22
+
+# Erlaubte SSH-Benutzer (leer = kein AllowUsers, alle Systembenutzer erlaubt)
+ssh_allowed_users: []
+
+# ─── UFW-Firewall ────────────────────────────────────────────────────────────
+# KRITISCH: Nur diese IPs erhalten SSH-Zugang nach UFW-Aktivierung!
+# ANPASSEN: Eigene Management-IP eintragen (falsche IP = Aussperrung!)
+ufw_allowed_ssh_sources:
+  - "<DEINE_MANAGEMENT_IP>"
+
+# ─── Admin-Kontakt ───────────────────────────────────────────────────────────
+# Für Fail2Ban-Benachrichtigungen und System-Alerts
+# ANPASSEN:
+admin_email: "<DEINE_EMAIL>"

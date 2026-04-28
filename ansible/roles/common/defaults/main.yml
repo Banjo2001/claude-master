@@ -33,6 +33,7 @@ common_packages:
   - rsync
   - net-tools
   - dnsutils
+  - certbot
 
 # ─── SSH-Härtung ─────────────────────────────────────────────────────────────
 ssh_port: 22

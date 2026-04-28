@@ -15,15 +15,32 @@
     mode: "0644"
   notify: reload_nginx
 
-- name: "Let's Encrypt Zertifikate holen (certbot)"
+# WARUM: Port 80 muss vor certbot offen sein — certbot --standalone bindet
+# kurz auf Port 80 für die HTTP-01 Challenge. UFW (common-Rolle) blockiert
+# standardmäßig alles. Diese Regel wird durch matrix firewall.yml beibehalten.
+- name: "UFW — Port 80 vor certbot öffnen (HTTP-01 Challenge)"
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+    comment: "HTTP (Let's Encrypt Challenge)"
+
+# WARUM --config-dir: certbot legt Zertifikate unter live/<domain>/fullchain.pem
+# ab. Compose mountet matrix_base_dir/certs → /etc/nginx/certs (nginx) und
+# /etc/ssl (coturn). So sind Zertifikate in beiden Containern verfügbar.
+# WARUM --standalone: Nginx läuft noch nicht beim ersten certbot-Aufruf.
+# creates: verhindert erneuten Aufruf wenn Zertifikat bereits existiert.
+- name: "Let's Encrypt Zertifikate holen (certbot --standalone)"
   ansible.builtin.command: >
     certbot certonly
     --standalone
     --non-interactive
     --agree-tos
     --email {{ matrix_letsencrypt_email }}
-    --domains matrix.{{ matrix_domain }}
-    --cert-path {{ matrix_base_dir }}/certs
+    --domain matrix.{{ matrix_domain }}
+    --config-dir {{ matrix_base_dir }}/certs
+    --work-dir /tmp/certbot-work
+    --logs-dir /tmp/certbot-logs
   args:
     creates: "{{ matrix_base_dir }}/certs/live/matrix.{{ matrix_domain }}/fullchain.pem"
   changed_when: true

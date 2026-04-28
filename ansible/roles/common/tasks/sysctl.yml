@@ -14,8 +14,12 @@
       # Automatisch durch Ansible deployt
       # =============================================================
 
-      # ─── Netzwerk: IP-Forwarding (nur für Router aktivieren) ────
-      net.ipv4.ip_forward = 0
+      # ─── Netzwerk: IP-Forwarding ─────────────────────────────────
+      # WARUM 1: Docker benötigt ip_forward=1 für Container-Routing!
+      # Docker setzt dies beim Start selbst — wir setzen es explizit für
+      # den Fall eines Neustarts nach Ansible-Lauf.
+      net.ipv4.ip_forward = 1
+      # IPv6-Forwarding: Nur wenn IPv6-Container benötigt werden aktivieren
       net.ipv6.conf.all.forwarding = 0
 
       # ─── Netzwerk: SYN-Flood-Schutz ─────────────────────────────
