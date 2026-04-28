@@ -1,0 +1,61 @@
+---
+# =============================================================================
+# DATEI:        ansible/inventories/prod/group_vars/all/vault.yml.example
+# ZWECK:        Referenz für die Struktur der vault.yml (UNVERSCHLÜSSELT — nur
+#               als Beispiel, nur Platzhalter, NIEMALS echte Werte hier!).
+#
+#               Die echte vault.yml wird durch 03_init_ansible_vault.sh als
+#               ansible-vault-verschlüsselte Datei erzeugt.
+#
+# KOPIEREN:     NICHT direkt kopieren! Stattdessen:
+#                 bash scripts/setup/03_init_ansible_vault.sh
+#               Oder manuell:
+#                 ansible-vault create vault.yml --vault-password-file ~/.vault_pass.txt
+#
+# BEARBEITEN:   ansible-vault edit ansible/inventories/prod/group_vars/all/vault.yml
+# ANZEIGEN:     ansible-vault view ansible/inventories/prod/group_vars/all/vault.yml
+#
+# SICHERHEIT:   - vault.yml MUSS ansible-vault-verschlüsselt sein (AES-256)
+#               - vault-Passwort liegt AUSSERHALB des Repos in ~/.vault_pass.txt
+#               - Diese .example-Datei enthält NUR Platzhalter, keine Secrets
+# =============================================================================
+
+# ─── Proxmox VE ─────────────────────────────────────────────────────────────
+# API-Token: PVE Web-UI → Rechenzentrum → API-Tokens → Hinzufügen
+vault_pve_api_token_id: "ansible@pve!deploy"
+vault_pve_api_token_secret: "<UUID-GENERIERT-VON-PVE>"
+
+# ─── Proxmox Backup Server ──────────────────────────────────────────────────
+# API-Token: PBS Web-UI → Konfiguration → API-Tokens
+vault_pbs_api_token_id: "ansible@pbs!verify"
+vault_pbs_api_token_secret: "<UUID-GENERIERT-VON-PBS>"
+
+# ─── Matrix Synapse ─────────────────────────────────────────────────────────
+# Erzeugen mit: openssl rand -hex 32
+# WARUM hex 32: 32 Bytes = 256 Bit Entropie, Hex-Format ist YAML-sicher.
+
+# Registrierungsschlüssel (verhindert Spam-Anmeldungen via Admin-API)
+vault_matrix_registration_shared_secret: "<HEX_64_ZEICHEN>"
+
+# Macaroon-Key für Tokens (Login, Reset-Token, Form-Tokens)
+vault_matrix_macaroon_secret_key: "<HEX_64_ZEICHEN>"
+
+# PostgreSQL-Passwort für den synapse-User
+vault_matrix_db_password: "<STARK_RANDOM_PASSWORT_MIN_24_ZEICHEN>"
+
+# Coturn TURN-Server Authentifizierung (HMAC shared secret)
+vault_coturn_auth_secret: "<HEX_64_ZEICHEN>"
+
+# ─── Nextcloud ───────────────────────────────────────────────────────────────
+# AIO-Mastercontainer setzt Datenbank-Passwörter selbst — nur falls extern nötig
+vault_nextcloud_db_password: "<STARK_RANDOM_PASSWORT>"
+vault_nextcloud_db_root_password: "<STARK_RANDOM_PASSWORT>"
+vault_nextcloud_admin_password: "<STARK_RANDOM_PASSWORT>"
+
+# ─── SSH ─────────────────────────────────────────────────────────────────────
+# Öffentlicher Schlüssel des Control-Nodes (kommt in authorized_keys der Hosts)
+# Inhalt von ~/.ssh/id_ed25519_proxmox.pub einfügen
+vault_control_node_ssh_pubkey: "ssh-ed25519 AAAA... user@control-node"
+
+# ─── E-Mail / SMTP (optional, für Benachrichtigungen) ───────────────────────
+vault_smtp_password: "<APP_PASSWORT_DES_SMTP_PROVIDERS>"

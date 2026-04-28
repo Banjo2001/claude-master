@@ -1,0 +1,59 @@
+---
+# =============================================================================
+# DATEI:        ansible/inventories/prod/group_vars/all/vars.yml.example
+# ZWECK:        Vorlage für nicht-sensitive Variablen (echte werden in vars.yml
+#               gepflegt — diese Datei nur als Referenz committed).
+# KOPIEREN:     cp vars.yml.example vars.yml
+#               (oder: 03_init_ansible_vault.sh erstellt vars.yml automatisch)
+# SECRETS:      Gehören NICHT hier! Verwende vault.yml (ansible-vault).
+#
+# WICHTIG:      Docker-interne Werte (z.B. matrix_db_host: "postgres") stehen
+#               bereits korrekt in den Ansible-Rollen-Defaults und DÜRFEN HIER
+#               NICHT überschrieben werden — sonst verbindet sich Synapse
+#               nicht mit dem postgres-Container im selben Docker-Netzwerk!
+# =============================================================================
+
+# ─── Allgemein ───────────────────────────────────────────────────────────────
+timezone: "Europe/Berlin"
+locale: "de_DE.UTF-8"
+
+# ─── Proxmox VE ──────────────────────────────────────────────────────────────
+# IP oder Hostname des Proxmox-VE-Hosts (für Skripte/API-Aufrufe)
+pve_host: "<PVE-HOST-IP>"        # ANPASSEN, z.B. 192.0.2.10
+pve_port: 8006
+
+# ─── Proxmox Backup Server ───────────────────────────────────────────────────
+pbs_host: "<PBS-HOST-IP>"        # ANPASSEN, z.B. 192.0.2.11
+pbs_port: 8007
+pbs_datastore: "<PBS-DATASTORE-NAME>"
+
+# ─── Matrix Synapse ──────────────────────────────────────────────────────────
+# KRITISCH: matrix_domain bestimmt die Matrix-Server-ID!
+# Beispiel: "example.com" → User-IDs wie @user:example.com
+# Diese kann nach dem ersten Deploy NICHT mehr geändert werden!
+matrix_domain: "<DEINE_DOMAIN>"          # z.B. example.com
+
+# Let's Encrypt E-Mail (für Zertifikat-Benachrichtigungen)
+matrix_letsencrypt_email: "<DEINE_EMAIL>"
+
+# ─── Nextcloud AIO ───────────────────────────────────────────────────────────
+# Subdomain für Nextcloud (z.B. cloud.example.com)
+nextcloud_domain: "cloud.<DEINE_DOMAIN>"
+
+# IPs die das Admin-Interface von Nextcloud (Port 8080) erreichen dürfen.
+# WICHTIG: NIEMALS 0.0.0.0/0 — Admin-Port niemals öffentlich zugänglich machen!
+nextcloud_admin_allowed_sources:
+  - "<DEINE_MANAGEMENT_IP>"
+
+# ─── SSH-Härtung ─────────────────────────────────────────────────────────────
+ssh_port: 22
+ssh_allowed_users: []   # leer = AllowUsers-Direktive nicht setzen
+
+# ─── UFW-Firewall ────────────────────────────────────────────────────────────
+# KRITISCH: Nur diese IPs erhalten SSH-Zugang!
+# Beispiel: deine eigene Heim-IP (kannst du via https://ifconfig.me ermitteln)
+ufw_allowed_ssh_sources:
+  - "<DEINE_MANAGEMENT_IP>"
+
+# ─── Admin-E-Mail ────────────────────────────────────────────────────────────
+admin_email: "<DEINE_EMAIL>"

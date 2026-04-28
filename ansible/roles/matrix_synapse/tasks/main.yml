@@ -9,6 +9,12 @@
 - name: "Verzeichnisse erstellen"
   ansible.builtin.include_tasks: directories.yml
 
+# WARUM Firewall ZUERST: certbot --standalone in nginx.yml braucht Port 80
+# offen für die HTTP-01 ACME-Challenge. UFW aus common.yml blockiert sonst.
+- name: "Firewall-Regeln für Matrix"
+  ansible.builtin.include_tasks: firewall.yml
+  tags: firewall
+
 - name: "PostgreSQL konfigurieren"
   ansible.builtin.include_tasks: postgres.yml
   tags: postgres
@@ -25,14 +31,12 @@
   ansible.builtin.include_tasks: coturn.yml
   tags: coturn
 
-- name: "Nginx Reverse Proxy konfigurieren"
+# WARUM Nginx VOR Compose: certbot holt Zertifikate (Port 80 standalone),
+# DANACH startet Compose Nginx und nimmt Port 80/443 in Beschlag.
+- name: "Nginx Reverse Proxy konfigurieren + Let's Encrypt"
   ansible.builtin.include_tasks: nginx.yml
   tags: nginx
 
 - name: "Docker Compose starten"
   ansible.builtin.include_tasks: compose.yml
   tags: compose
-
-- name: "Firewall-Regeln für Matrix"
-  ansible.builtin.include_tasks: firewall.yml
-  tags: firewall

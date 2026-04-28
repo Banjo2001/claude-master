@@ -2,9 +2,22 @@
 # =============================================================================
 # DATEI:        ansible/roles/matrix_synapse/tasks/nginx.yml
 # ZWECK:        Nginx als Reverse Proxy für Matrix Synapse konfigurieren
-# KRITISCH:     proxy_pass OHNE trailing slash! http://localhost:8008 (kein /)
+#               + Let's Encrypt Zertifikate via certbot beziehen
+# KRITISCH:     proxy_pass OHNE trailing slash! http://synapse:8008 (kein /)
 # ROLLBACK:     docker compose down nginx
 # =============================================================================
+
+# WARUM certbot lokal (apt) statt im Container: Zertifikate werden EINMALIG
+# vor dem Nginx-Start geholt und in matrix_base_dir/certs abgelegt. Nginx im
+# Container mountet diesen Pfad read-only. Erneuerung via systemd-Timer +
+# nginx reload (siehe handler).
+- name: "Certbot installieren (Let's Encrypt Client)"
+  ansible.builtin.apt:
+    name:
+      - certbot
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
 
 - name: "Nginx-Konfiguration aus Template deployen"
   ansible.builtin.template:
@@ -15,7 +28,20 @@
     mode: "0644"
   notify: reload_nginx
 
-- name: "Let's Encrypt Zertifikate holen (certbot)"
+# WARUM: Existieren Zertifikate bereits? Prüfen verhindert unnötige Aufrufe
+# und verhindert Rate-Limit-Probleme bei Let's Encrypt (5/Woche/Domain).
+- name: "Prüfen ob Let's Encrypt Zertifikate bereits existieren"
+  ansible.builtin.stat:
+    path: "{{ matrix_base_dir }}/certs/live/matrix.{{ matrix_domain }}/fullchain.pem"
+  register: matrix_cert_stat
+
+# WARUM --standalone: Bei Erst-Deploy läuft Nginx noch nicht, certbot kann
+# selbst kurzfristig Port 80 binden um die HTTP-01-Challenge zu beantworten.
+# WARUM --config-dir: Lenkt certbot dazu, alle Daten in matrix_base_dir/certs
+# abzulegen (statt /etc/letsencrypt). So mountet Nginx/Coturn diesen einen Pfad.
+# WARUM --work-dir und --logs-dir: certbot würde sonst auf /var/lib bzw /var/log
+# /letsencrypt schreiben — wir halten alles unterhalb von matrix_base_dir.
+- name: "Let's Encrypt Zertifikate holen (Erst-Deploy, certbot --standalone)"
   ansible.builtin.command: >
     certbot certonly
     --standalone
@@ -23,7 +49,69 @@
     --agree-tos
     --email {{ matrix_letsencrypt_email }}
     --domains matrix.{{ matrix_domain }}
-    --cert-path {{ matrix_base_dir }}/certs
-  args:
-    creates: "{{ matrix_base_dir }}/certs/live/matrix.{{ matrix_domain }}/fullchain.pem"
+    --config-dir {{ matrix_base_dir }}/certs
+    --work-dir {{ matrix_base_dir }}/certs/work
+    --logs-dir {{ matrix_base_dir }}/certs/logs
   changed_when: true
+  when: not matrix_cert_stat.stat.exists
+
+# WARUM systemd-Timer: certbot legt einen eigenen Timer (certbot.timer) an,
+# der bei Standard-Pfad (/etc/letsencrypt) automatisch erneuert. Da wir
+# --config-dir umleiten, brauchen wir einen eigenen Renew-Hook.
+- name: "Renew-Skript erstellen (mit korrektem config-dir)"
+  ansible.builtin.copy:
+    dest: /usr/local/bin/matrix_certs_renew.sh
+    content: |
+      #!/usr/bin/env bash
+      # Auto-generiert von Ansible — nicht manuell bearbeiten!
+      # ZWECK: Zertifikatserneuerung mit unserem custom config-dir
+      set -euo pipefail
+      certbot renew \
+        --config-dir {{ matrix_base_dir }}/certs \
+        --work-dir {{ matrix_base_dir }}/certs/work \
+        --logs-dir {{ matrix_base_dir }}/certs/logs \
+        --pre-hook "docker compose -f {{ matrix_base_dir }}/compose.yml stop nginx" \
+        --post-hook "docker compose -f {{ matrix_base_dir }}/compose.yml start nginx"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "Systemd-Timer für tägliche Erneuerung anlegen"
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/matrix-certs-renew.service
+    content: |
+      [Unit]
+      Description=Matrix Let's Encrypt Renewal
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/matrix_certs_renew.sh
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: "Systemd-Timer-Unit anlegen"
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/matrix-certs-renew.timer
+    content: |
+      [Unit]
+      Description=Run Matrix LE renewal daily
+
+      [Timer]
+      OnCalendar=daily
+      Persistent=true
+      RandomizedDelaySec=1h
+
+      [Install]
+      WantedBy=timers.target
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: "Timer aktivieren und starten"
+  ansible.builtin.systemd:
+    name: matrix-certs-renew.timer
+    enabled: true
+    state: started
+    daemon_reload: true

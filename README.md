@@ -100,6 +100,19 @@ nano ansible/inventories/prod/group_vars/all/vars.yml
 # Secrets via Vault setzen:
 ansible-vault edit ansible/inventories/prod/group_vars/all/vault.yml \
   --vault-password-file ~/.vault_pass.txt
+
+# (Empfohlen) Starke Zufalls-Secrets generieren statt manuell setzen:
+bash scripts/setup/04_generate_secrets.sh
+```
+
+### Schritt 7b: Pre-Deploy-Validierung
+
+```bash
+# DNS-Records prüfen (Pflicht vor Let's Encrypt!):
+bash scripts/setup/05_dns_preflight.sh
+
+# Inventar + SSH + Vault validieren:
+bash scripts/setup/06_inventory_check.sh
 ```
 
 ### Schritt 8: Ansible Dry-Run (BEVOR etwas deployed wird)

@@ -18,13 +18,8 @@
     state: absent
   ignore_errors: true
 
-- name: "Docker Repository GPG-Schlüssel importieren"
-  ansible.builtin.apt_key:
-    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
-    keyring: /etc/apt/keyrings/docker.gpg
-    state: present
-
-- name: "Verzeichnis für Keyring erstellen"
+# WARUM: Keyring-Verzeichnis MUSS vor dem Key-Import existieren
+- name: "Verzeichnis für APT-Keyrings erstellen"
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
@@ -32,10 +27,20 @@
     group: root
     mode: "0755"
 
+# WARUM kein apt_key: ist seit Ansible 2.x deprecated.
+# get_url + dearmor ist der moderne, empfohlene Weg.
+- name: "Docker Repository GPG-Schlüssel herunterladen"
+  ansible.builtin.get_url:
+    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: "Docker Repository hinzufügen"
   ansible.builtin.apt_repository:
     repo: >
-      deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
       https://download.docker.com/linux/{{ ansible_distribution | lower }}
       {{ ansible_distribution_release }} stable
     state: present

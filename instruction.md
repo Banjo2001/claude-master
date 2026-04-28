@@ -233,11 +233,19 @@ cd /opt/infra-admin
 claude
 ```
 
-Dann sage Claude Code:
+Den vorbereiteten Prompt aus `prompt.txt` (im Repo-Root) komplett kopieren und
+in Claude Code einfügen. Claude Code arbeitet dann selbstständig durch:
 
-> "Fahre mit dem Deploy fort. Starte mit `03_init_ansible_vault.sh`,
-> dann deploye die Ansible-Rollen in der Reihenfolge aus
-> `docs/architecture/deployment_sequence.md`."
+```bash
+# Prompt anzeigen, kopieren und in Claude Code einfügen:
+cat prompt.txt
+```
+
+Der Prompt führt Claude Code durch:
+1. Setup-Skripte 03 → 06 (Vault + Secrets + DNS-Check + Inventar-Validierung)
+2. Manuelles Eintragen der API-Tokens und IPs
+3. Dry-Run + schrittweise Deploys (common → docker → matrix → nextcloud)
+4. Tests und Status-Updates in `actionlog.md`
 
 ---
 
