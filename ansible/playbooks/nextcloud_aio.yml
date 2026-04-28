@@ -1,0 +1,24 @@
+---
+# =============================================================================
+# DATEI:        ansible/playbooks/nextcloud_aio.yml
+# ZWECK:        Nextcloud AIO (All-In-One) via Docker Compose deployen
+# AUFRUFEN:     ansible-playbook ansible/playbooks/nextcloud_aio.yml
+# TESTEN:       ansible-playbook ansible/playbooks/nextcloud_aio.yml --check --diff
+# VORBEDINGUNG: common.yml und docker.yml müssen vorher ausgeführt worden sein
+# NACH DEPLOY:  Admin-Interface: https://<HOST>:8080 (NUR über IP, NICHT Domain!)
+# =============================================================================
+
+- name: "Nextcloud AIO Deploy"
+  hosts: nextcloud_servers
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - "{{ playbook_dir }}/../inventories/prod/group_vars/all/vars.yml"
+    - "{{ playbook_dir }}/../inventories/prod/group_vars/all/vault.yml"
+
+  roles:
+    - role: nextcloud_aio
+      tags:
+        - nextcloud
+        - nextcloud_aio

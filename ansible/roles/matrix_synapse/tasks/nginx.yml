@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/nginx.yml
+# ZWECK:        Nginx als Reverse Proxy für Matrix Synapse konfigurieren
+# KRITISCH:     proxy_pass OHNE trailing slash! http://localhost:8008 (kein /)
+# ROLLBACK:     docker compose down nginx
+# =============================================================================
+
+- name: "Nginx-Konfiguration aus Template deployen"
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "{{ matrix_config_dir }}/nginx.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload_nginx
+
+- name: "Let's Encrypt Zertifikate holen (certbot)"
+  ansible.builtin.command: >
+    certbot certonly
+    --standalone
+    --non-interactive
+    --agree-tos
+    --email {{ matrix_letsencrypt_email }}
+    --domains matrix.{{ matrix_domain }}
+    --cert-path {{ matrix_base_dir }}/certs
+  args:
+    creates: "{{ matrix_base_dir }}/certs/live/matrix.{{ matrix_domain }}/fullchain.pem"
+  changed_when: true

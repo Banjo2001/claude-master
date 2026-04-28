@@ -1,6 +1,7 @@
 # =============================================================================
 # .yamllint.yml — YAML Lint Konfiguration
 # ZWECK: Regeln für yamllint — prüft YAML-Syntax und Formatierung
+#        Kompatibel mit ansible-lint Anforderungen
 # =============================================================================
 ---
 extends: default
@@ -14,10 +15,10 @@ rules:
       - 'true'
       - 'false'
     check-keys: false
-  document-start:
-    present: false
+  document-start: disable
   comments:
     min-spaces-from-content: 1
+  comments-indentation: false
   indentation:
     spaces: 2
     indent-sequences: true
@@ -29,3 +30,6 @@ rules:
   braces:
     min-spaces-inside: 0
     max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

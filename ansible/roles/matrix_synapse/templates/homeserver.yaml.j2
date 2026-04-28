@@ -1,0 +1,83 @@
+# =============================================================================
+# homeserver.yaml — Matrix Synapse Konfiguration
+# AUTOMATISCH GENERIERT durch Ansible
+# MANUELL NICHT BEARBEITEN — Änderungen werden überschrieben!
+# =============================================================================
+
+# ─── Server Identity ──────────────────────────────────────────────────────────
+server_name: "{{ matrix_server_name }}"
+public_baseurl: "{{ matrix_public_baseurl }}"
+pid_file: /homeserver.pid
+web_client_location: https://element.io
+
+# ─── Listeners ────────────────────────────────────────────────────────────────
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses:
+      - "0.0.0.0"
+    resources:
+      - names:
+          - client
+          - federation
+        compress: false
+
+# ─── Datenbank ────────────────────────────────────────────────────────────────
+# PostgreSQL statt SQLite (PFLICHT für Produktion)
+# KRITISCH: LC_COLLATE und LC_CTYPE MÜSSEN 'C' sein!
+database:
+  name: psycopg2
+  args:
+    user: "{{ matrix_db_user }}"
+    password: "{{ vault_matrix_db_password }}"
+    database: "{{ matrix_db_name }}"
+    host: "{{ matrix_db_host }}"
+    port: "{{ matrix_db_port }}"
+    cp_min: 5
+    cp_max: 10
+
+# ─── Redis (Worker-Koordination) ─────────────────────────────────────────────
+redis:
+  enabled: true
+  host: "{{ matrix_redis_host }}"
+  port: "{{ matrix_redis_port }}"
+
+# ─── Logging ─────────────────────────────────────────────────────────────────
+log_config: "/config/log.config"
+
+# ─── Media ───────────────────────────────────────────────────────────────────
+media_store_path: /media_store
+max_upload_size: "{{ matrix_nginx_client_max_body_size }}"
+
+# ─── Registrierung ────────────────────────────────────────────────────────────
+# KRITISCH: NIEMALS enable_registration: true setzen ohne weiteren Schutz!
+enable_registration: {{ matrix_enable_registration | lower }}
+allow_guest_access: {{ matrix_allow_guest_access | lower }}
+enable_room_list_search: {{ matrix_enable_room_list_search | lower }}
+
+# ─── Secrets ──────────────────────────────────────────────────────────────────
+registration_shared_secret: "{{ vault_matrix_registration_shared_secret }}"
+macaroon_secret_key: "{{ vault_matrix_macaroon_secret_key }}"
+form_secret: "{{ vault_matrix_macaroon_secret_key }}"
+
+# ─── Signing Key ─────────────────────────────────────────────────────────────
+signing_key_path: "/data/{{ matrix_server_name }}.signing.key"
+
+# ─── Trusted Key Servers ─────────────────────────────────────────────────────
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+# ─── TURN-Server (Coturn) ─────────────────────────────────────────────────────
+turn_uris:
+  - "turn:{{ matrix_domain }}:{{ coturn_listening_port }}?transport=udp"
+  - "turn:{{ matrix_domain }}:{{ coturn_listening_port }}?transport=tcp"
+  - "turns:{{ matrix_domain }}:{{ coturn_tls_listening_port }}?transport=tcp"
+turn_shared_secret: "{{ vault_coturn_auth_secret }}"
+turn_user_lifetime: 86400000
+turn_allow_guests: false
+
+# ─── Metriken (Prometheus) ────────────────────────────────────────────────────
+enable_metrics: true
+metrics_port: 9092

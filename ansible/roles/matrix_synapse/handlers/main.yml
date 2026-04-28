@@ -1,0 +1,26 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/handlers/main.yml
+# ZWECK:        Handler für die Matrix Synapse Rolle
+# =============================================================================
+
+- name: "Restart synapse"
+  ansible.builtin.command: >
+    docker compose -f {{ matrix_base_dir }}/compose.yml
+    restart synapse
+  changed_when: true
+  listen: restart_synapse
+
+- name: "Reload nginx"
+  ansible.builtin.command: >
+    docker compose -f {{ matrix_base_dir }}/compose.yml
+    exec nginx nginx -s reload
+  changed_when: true
+  listen: reload_nginx
+
+- name: "Restart coturn"
+  ansible.builtin.command: >
+    docker compose -f {{ matrix_base_dir }}/compose.yml
+    restart coturn
+  changed_when: true
+  listen: restart_coturn

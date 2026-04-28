@@ -4,7 +4,8 @@
 # ZWECK:        Handler für die Docker-Rolle
 # =============================================================================
 
-- name: "restart_docker"
+- name: "Restart docker"
   ansible.builtin.service:
     name: docker
     state: restarted
+  listen: restart_docker

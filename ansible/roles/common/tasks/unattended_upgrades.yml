@@ -5,7 +5,7 @@
 # ROLLBACK:     apt remove unattended-upgrades
 # =============================================================================
 
-- name: "unattended-upgrades Paket installieren"
+- name: "Unattended-upgrades Paket installieren"
   ansible.builtin.apt:
     name:
       - unattended-upgrades
@@ -24,7 +24,7 @@
     group: root
     mode: "0644"
 
-- name: "unattended-upgrades starten und aktivieren"
+- name: "Unattended-upgrades starten und aktivieren"
   ansible.builtin.service:
     name: unattended-upgrades
     state: started

@@ -1,0 +1,15 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/coturn.yml
+# ZWECK:        Coturn TURN-Server für Matrix-Sprach-/Videoanrufe konfigurieren
+# ROLLBACK:     docker compose down coturn
+# =============================================================================
+
+- name: "Coturn-Konfigurationsdatei deployen"
+  ansible.builtin.template:
+    src: coturn.conf.j2
+    dest: "{{ matrix_config_dir }}/coturn.conf"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: restart_coturn

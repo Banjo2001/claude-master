@@ -1,0 +1,56 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/directories.yml
+# ZWECK:        Verzeichnisstruktur für Matrix Synapse erstellen
+# =============================================================================
+
+- name: "Basis-Verzeichnisse erstellen"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ matrix_base_dir }}"
+    - "{{ matrix_config_dir }}"
+    - "{{ matrix_logs_dir }}"
+
+- name: "Daten-Verzeichnisse mit korrekten Rechten"
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    # Synapse: UID 991 (im Container)
+    - path: "{{ matrix_data_dir }}/synapse"
+      owner: "991"
+      group: "991"
+      mode: "0750"
+    # PostgreSQL: UID 999 (im Container)
+    - path: "{{ matrix_data_dir }}/postgres"
+      owner: "999"
+      group: "999"
+      mode: "0750"
+    # Redis: UID 999 (im Container)
+    - path: "{{ matrix_data_dir }}/redis"
+      owner: "999"
+      group: "999"
+      mode: "0750"
+    # Coturn: root (im Container)
+    - path: "{{ matrix_data_dir }}/coturn"
+      owner: "root"
+      group: "root"
+      mode: "0750"
+    # Nginx Logs
+    - path: "{{ matrix_logs_dir }}/nginx"
+      owner: "root"
+      group: "root"
+      mode: "0755"
+    # Let's Encrypt Zertifikate
+    - path: "{{ matrix_base_dir }}/certs"
+      owner: "root"
+      group: "root"
+      mode: "0700"

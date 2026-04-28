@@ -1,0 +1,23 @@
+---
+# =============================================================================
+# DATEI:        ansible/playbooks/matrix_synapse.yml
+# ZWECK:        Matrix Synapse Stack deployen (Synapse, PostgreSQL, Redis, Coturn, Nginx)
+# AUFRUFEN:     ansible-playbook ansible/playbooks/matrix_synapse.yml
+# TESTEN:       ansible-playbook ansible/playbooks/matrix_synapse.yml --check --diff
+# VORBEDINGUNG: common.yml und docker.yml müssen vorher ausgeführt worden sein
+# =============================================================================
+
+- name: "Matrix Synapse Stack Deploy"
+  hosts: matrix_servers
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - "{{ playbook_dir }}/../inventories/prod/group_vars/all/vars.yml"
+    - "{{ playbook_dir }}/../inventories/prod/group_vars/all/vault.yml"
+
+  roles:
+    - role: matrix_synapse
+      tags:
+        - matrix
+        - matrix_synapse

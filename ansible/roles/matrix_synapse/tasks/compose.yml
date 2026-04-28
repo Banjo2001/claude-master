@@ -1,0 +1,33 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/compose.yml
+# ZWECK:        Docker Compose für den gesamten Matrix-Stack starten
+# ROLLBACK:     docker compose -f /opt/matrix/compose.yml down
+# =============================================================================
+
+- name: "Docker Compose-Datei deployen"
+  ansible.builtin.template:
+    src: compose.yml.j2
+    dest: "{{ matrix_base_dir }}/compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: "Docker Compose Pull (neue Images)"
+  ansible.builtin.command: docker compose -f {{ matrix_base_dir }}/compose.yml pull
+  changed_when: false
+  register: compose_pull
+
+- name: "Docker Compose Up (Stack starten)"
+  ansible.builtin.command: docker compose -f {{ matrix_base_dir }}/compose.yml up -d
+  changed_when: true
+  when: compose_pull is not failed
+
+- name: "Stack-Status anzeigen"
+  ansible.builtin.command: docker compose -f {{ matrix_base_dir }}/compose.yml ps
+  changed_when: false
+  register: compose_status
+
+- name: "Stack-Status ausgeben"
+  ansible.builtin.debug:
+    var: compose_status.stdout_lines

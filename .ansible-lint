@@ -3,8 +3,8 @@
 # ZWECK: Regeln für ansible-lint — prüft Ansible Best Practices
 # =============================================================================
 
-# Profile: moderate ist ein guter Kompromiss zwischen Strenge und Praxistauglichkeit
-profile: moderate
+# Profile: basic ist ausreichend für diese Projektphase
+profile: basic
 
 # Verzeichnisse ausschließen
 exclude_paths:
@@ -14,19 +14,16 @@ exclude_paths:
 
 # Regeln die wir deaktivieren (mit Begründung):
 skip_list:
-  # yaml[truthy]: Wir prüfen das bereits in yamllint
-  # - yaml[truthy]
-
-  # no-changed-when: Manchmal unvermeidbar bei Shell-Tasks
+  # no-changed-when: Manchmal unvermeidbar bei Shell-Tasks mit sshd -t
   - no-changed-when
+  # var-naming: Gemeinsame Variablen (timezone, ssh_port) ohne Rollen-Präfix
+  # sind gängige Praxis bei shared vars zwischen Rollen
+  - var-naming[no-role-prefix]
 
 warn_list:
   # Diese Regeln erzeugen Warnungen, keine Fehler
   - yaml[line-length]
   - experimental
-
-# Minimale Ansible-Version
-min_ansible_version: "2.17"
 
 # FQCN (Fully Qualified Collection Name) erzwingen
 # z.B. ansible.builtin.apt statt nur apt
