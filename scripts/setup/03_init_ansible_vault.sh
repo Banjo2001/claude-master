@@ -275,59 +275,63 @@ else
 ---
 # =============================================================================
 # vars.yml — Nicht-sensitive Variablen
-# ZWECK: Konfiguration die KEIN Secret enthält (öffentlich commitbar)
+# ZWECK: Konfiguration die KEIN Secret enthält
+# AUSFÜLLEN: Alle <PLATZHALTER> durch echte Werte ersetzen!
 # SECRETS: Gehören in vault.yml (ansible-vault verschlüsselt)
+#
+# HINWEIS: Docker-interne Werte (z.B. matrix_db_host: "postgres") stehen
+#          bereits korrekt in den Ansible-Rollen-Defaults und DÜRFEN HIER
+#          NICHT überschrieben werden!
 # =============================================================================
 
 # ─── Allgemein ───────────────────────────────────────────────────────────────
+# ANPASSEN:
 timezone: "Europe/Berlin"
 locale: "de_DE.UTF-8"
 
 # ─── Proxmox VE ─────────────────────────────────────────────────────────────
-pve_host: "pve01.example.com"
+# IP oder Hostname des Proxmox-VE-Hosts
+# ANPASSEN:
+pve_host: "<PVE-HOST-IP>"
 pve_port: 8006
 
 # ─── Proxmox Backup Server ──────────────────────────────────────────────────
-pbs_host: "pbs01.example.com"
+# ANPASSEN:
+pbs_host: "<PBS-HOST-IP>"
 pbs_port: 8007
-pbs_datastore: "backup-store"
+pbs_datastore: "<PBS-DATASTORE-NAME>"
 
 # ─── Matrix Synapse ─────────────────────────────────────────────────────────
+# KRITISCH: matrix_domain bestimmt die Matrix-Server-ID (UNVERÄNDERLICH nach Deploy!)
+# Beispiel: "example.com" ergibt Nutzer wie @user:example.com
+# ANPASSEN:
 matrix_domain: "<DEINE_DOMAIN>"
-matrix_server_name: "<DEINE_DOMAIN>"
-matrix_public_baseurl: "https://matrix.<DEINE_DOMAIN>"
 
-# PostgreSQL für Matrix
-matrix_db_name: "synapse"
-matrix_db_user: "synapse"
-matrix_db_host: "localhost"
-matrix_db_port: 5432
+# Let's Encrypt E-Mail (für Zertifikat-Benachrichtigungen)
+# ANPASSEN:
+matrix_letsencrypt_email: "<DEINE_EMAIL>"
 
-# Coturn TURN-Server
-coturn_listening_port: 3478
-coturn_tls_listening_port: 5349
-coturn_min_port: 49152
-coturn_max_port: 65535
-
-# ─── Nextcloud ───────────────────────────────────────────────────────────────
-nextcloud_domain: "<DEINE_NEXTCLOUD_DOMAIN>"
-nextcloud_db_name: "nextcloud"
-nextcloud_db_user: "nextcloud"
+# ─── Nextcloud AIO ───────────────────────────────────────────────────────────
+# Subdomain für Nextcloud (z.B. cloud.example.com)
+# ANPASSEN:
+nextcloud_domain: "<cloud.DEINE_DOMAIN>"
 
 # ─── SSH-Härtung ─────────────────────────────────────────────────────────────
+# SSH-Port (Standard: 22)
 ssh_port: 22
+# Erlaubte SSH-User (leer = kein AllowUsers, alle Benutzer erlaubt)
 ssh_allowed_users: []
 
 # ─── UFW-Firewall ────────────────────────────────────────────────────────────
-# Management-IPs die SSH-Zugriff erhalten (Platzhalter: RFC 5737)
+# KRITISCH: Nur diese IPs erhalten SSH-Zugang!
+# ANPASSEN: Deine echte Management-IP eintragen
 ufw_allowed_ssh_sources:
-  - "192.0.2.10"
+  - "<DEINE_MANAGEMENT_IP>"
 
-# ─── E-Mail / SMTP ──────────────────────────────────────────────────────────
-smtp_host: "mail.example.com"
-smtp_port: 587
-smtp_user: "admin@example.com"
-smtp_from: "admin@example.com"
+# ─── Admin-E-Mail ────────────────────────────────────────────────────────────
+# Für Fail2Ban-Benachrichtigungen und Let's Encrypt
+# ANPASSEN:
+admin_email: "<DEINE_EMAIL>"
 VARSEOF
     log_ok "vars.yml erstellt: $VARS_FILE"
 fi
