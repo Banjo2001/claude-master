@@ -52,8 +52,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # GITLEAKS_CONFIG: Wird automatisch aus .gitleaks.toml im Root geladen
-          # Keine manuelle config-path Angabe nötig — gitleaks findet .gitleaks.toml
+          GITLEAKS_CONFIG: "${{ github.workspace }}/.gitleaks.toml"
 
   env-file-check:
     name: Check für .env-Dateien im Repo

@@ -43,16 +43,20 @@ jobs:
           cache: pip
 
       - name: "yamllint installieren"
-        run: pip install yamllint
+        run: pip install "yamllint==1.38.0"
 
       - name: "GitHub Actions Workflows prüfen (immer)"
-        run: yamllint -c .yamllint.yml .github/
+        run: |
+          # Absolute Pfad verwenden damit .yamllint.yml in jedem CWD gefunden wird
+          yamllint -c "${{ github.workspace }}/.yamllint.yml" \
+            "${{ github.workspace }}/.github/"
 
       - name: "Ansible YAML-Dateien prüfen (wenn vorhanden)"
         run: |
           # WICHTIG: Klammern um -o Alternativen, damit find korrekt sucht!
           # Ohne Klammern: find sucht *.yaml überall im System, nicht nur in ansible/
-          YAML_FILES=$(find ansible/ \( -name "*.yml" -o -name "*.yaml" \) \
+          YAML_FILES=$(find "${{ github.workspace }}/ansible/" \
+            \( -name "*.yml" -o -name "*.yaml" \) \
             -type f ! -name ".gitkeep" 2>/dev/null | sort)
 
           if [ -z "$YAML_FILES" ]; then
@@ -60,7 +64,7 @@ jobs:
           else
             echo "Prüfe Ansible YAML-Dateien:"
             echo "$YAML_FILES"
-            echo "$YAML_FILES" | xargs yamllint -c .yamllint.yml
+            echo "$YAML_FILES" | xargs yamllint -c "${{ github.workspace }}/.yamllint.yml"
           fi
 
   ansible-lint:
