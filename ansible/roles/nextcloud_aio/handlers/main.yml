@@ -1,0 +1,14 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/nextcloud_aio/handlers/main.yml
+# ZWECK:        Handler für Nextcloud AIO — reagieren auf Konfigurationsänderungen
+# =============================================================================
+
+# WARUM: Handler startet den Mastercontainer neu wenn compose.yml geändert wurde.
+# AIO-Mastercontainer neu starten genügt — er startet alle Subcontainer selbst.
+- name: "Nextcloud AIO Mastercontainer neu starten"
+  community.docker.docker_compose_v2:
+    project_src: "{{ nextcloud_base_dir }}"
+    state: present
+    restarted: true
+  listen: restart_nextcloud

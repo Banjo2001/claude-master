@@ -1,0 +1,82 @@
+# =============================================================================
+# compose.yml — Nextcloud AIO Mastercontainer
+# AUTOMATISCH GENERIERT durch Ansible
+# DEPLOY:   docker compose -f {{ nextcloud_base_dir }}/compose.yml up -d
+# STOP:     docker compose -f {{ nextcloud_base_dir }}/compose.yml down
+# UPDATE:   docker compose -f {{ nextcloud_base_dir }}/compose.yml pull && ... up -d
+# =============================================================================
+#
+# ARCHITEKTUR-HINWEIS:
+# Dieser Compose-Stack enthält NUR den Mastercontainer.
+# Der Mastercontainer spawnt alle weiteren Container (Nextcloud, PostgreSQL,
+# Redis, Imaginary, Collabora, Talk, ...) eigenständig per Docker-Socket.
+# Diese Sub-Container erscheinen NICHT in dieser compose.yml.
+#
+# WICHTIG: Das Netzwerk "nextcloud-aio" muss vor dem Start existieren:
+#   docker network create nextcloud-aio
+# (Wird durch Ansible automatisch erledigt)
+#
+# ADMIN-INTERFACE:
+#   https://<SERVER-IP>:{{ nextcloud_admin_port }}
+#   NUR über IP erreichbar — NIEMALS über Domain-Namen!
+#   Begründung: TLS-Prüfung würde fehlschlagen; AIO erwartet direkte IP.
+#
+# =============================================================================
+
+networks:
+  # WARUM external: Das Netzwerk wird von Ansible vor diesem Stack erstellt.
+  # AIO fügt alle Subcontainer in dieses Netzwerk ein.
+  nextcloud-aio:
+    external: true
+
+volumes:
+  # WARUM: Mastercontainer-Daten persistent speichern (Konfiguration, Zertifikate)
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+
+services:
+
+  # ─── Nextcloud AIO Mastercontainer ──────────────────────────────────────────
+  # AUSNAHME-REGEL für :latest:
+  # Dieser Container DARF und MUSS :latest verwenden — er ist der Updatemanager.
+  # Er lädt alle anderen Container mit festen, verifizierten Versionen herunter.
+  # Andere Container: NIEMALS :latest!
+  nextcloud-aio-mastercontainer:
+    # KRITISCH: Dieser Container-Name DARF NICHT geändert werden!
+    # AIO verwendet diesen Namen intern für den Update-Mechanismus.
+    container_name: "{{ nextcloud_aio_container_name }}"
+    image: "{{ nextcloud_aio_image }}"
+    restart: unless-stopped
+    networks:
+      - nextcloud-aio
+    ports:
+      # Port 8080: Admin-Interface — NUR über IP, niemals über Domain!
+      - "{{ nextcloud_admin_port }}:{{ nextcloud_admin_port }}"
+      # Port 8443: Nextcloud HTTPS — über Domain erreichbar
+      - "{{ nextcloud_https_port }}:{{ nextcloud_https_port }}"
+    volumes:
+      # WARUM: Docker-Socket ist hier AUSNAHMSWEISE erlaubt.
+      # Der Mastercontainer muss andere Container starten/verwalten können.
+      # read-only (:ro) ist leider nicht möglich — AIO braucht Schreibzugriff.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persistente Konfigurationsdaten des Mastercontainers
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      # Nextcloud-Datenpfad — hier liegen alle Nextcloud-Daten
+      - "{{ nextcloud_data_dir }}:/mnt/ncdata"
+    environment:
+      # WARUM: AIO muss die öffentliche Domain kennen für Let's Encrypt und
+      # die interne Konfiguration aller Subcontainer.
+      NEXTCLOUD_DATADIR: "{{ nextcloud_data_dir }}"
+      APACHE_PORT: "{{ nextcloud_https_port }}"
+      APACHE_IP_BINDING: "0.0.0.0"
+      NEXTCLOUD_UPLOAD_LIMIT: "{{ nextcloud_upload_limit }}"
+      NEXTCLOUD_MAX_TIME: "{{ nextcloud_max_time }}"
+      NEXTCLOUD_MEMORY_LIMIT: "{{ nextcloud_memory_limit }}"
+      TIMEZONE: "{{ nextcloud_timezone }}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # WARUM: NET_BIND_SERVICE erlaubt das Binden auf Port 443 (<1024)
+      - NET_BIND_SERVICE

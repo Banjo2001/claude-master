@@ -1,0 +1,28 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/nextcloud_aio/tasks/firewall.yml
+# ZWECK:        UFW-Regeln für Nextcloud AIO setzen
+# SICHERHEIT:   Admin-Port 8080 NUR von definierten Management-IPs erreichbar!
+#               Port 8080 NIEMALS öffentlich zugänglich machen.
+# ROLLBACK:     ufw delete allow from <IP> to any port 8080
+# =============================================================================
+
+# WARUM: Port 8443 für Nextcloud HTTPS muss öffentlich erreichbar sein.
+# Alle anderen Ports sind intern oder nur für Management.
+- name: "Nextcloud — UFW: HTTPS-Port freigeben ({{ nextcloud_https_port }})"
+  community.general.ufw:
+    rule: allow
+    port: "{{ nextcloud_https_port }}"
+    proto: tcp
+    comment: "Nextcloud AIO HTTPS"
+
+# WARUM: Admin-Interface (Port 8080) darf NUR über IP, niemals über Domain
+# erreichbar sein. Zugangsbeschränkung auf Management-IPs ist Pflicht.
+- name: "Nextcloud — UFW: Admin-Port für Management-IPs ({{ nextcloud_admin_port }})"
+  community.general.ufw:
+    rule: allow
+    port: "{{ nextcloud_admin_port }}"
+    proto: tcp
+    src: "{{ item }}"
+    comment: "Nextcloud Admin-Interface (Management only)"
+  loop: "{{ nextcloud_admin_allowed_sources }}"

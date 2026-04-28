@@ -1,0 +1,68 @@
+# =============================================================================
+# compose.yml — Nextcloud AIO Mastercontainer (Referenz-Compose)
+# ZWECK:        Referenzdatei für manuellen Deploy (ohne Ansible)
+# DEPLOY:       docker compose up -d
+# STOP:         docker compose down
+# UPDATE:       docker compose pull && docker compose up -d
+#
+# VORBEDINGUNG: Docker-Netzwerk erstellen:
+#               docker network create nextcloud-aio
+#
+# ADMIN-INTERFACE:
+#   https://<SERVER-IP>:8080
+#   NUR über IP erreichbar — NIEMALS über Domain-Namen!
+#
+# ALLE VARIABLEN: Aus .env-Datei laden (Kopie von .env.example)
+# =============================================================================
+#
+# ARCHITEKTUR:
+# Dieser Stack enthält nur den Mastercontainer.
+# Er spawnt alle weiteren Container (Nextcloud, PostgreSQL, Redis, Apache,
+# Imaginary, Collabora, Talk, ...) eigenständig via Docker-Socket.
+#
+# =============================================================================
+
+networks:
+  nextcloud-aio:
+    external: true
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+
+services:
+
+  # ─── Nextcloud AIO Mastercontainer ──────────────────────────────────────────
+  # AUSNAHME: :latest ist hier erlaubt — er IS der Updatemanager.
+  # Alle Sub-Container werden mit festen Versionen durch ihn geladen.
+  nextcloud-aio-mastercontainer:
+    # KRITISCH: Dieser Container-Name DARF NICHT geändert werden!
+    container_name: nextcloud-aio-mastercontainer
+    image: nextcloud/all-in-one:latest
+    restart: unless-stopped
+    networks:
+      - nextcloud-aio
+    ports:
+      # Admin-Interface — NUR über IP, niemals über Domain!
+      - "${ADMIN_PORT:-8080}:${ADMIN_PORT:-8080}"
+      # Nextcloud HTTPS
+      - "${HTTPS_PORT:-8443}:${HTTPS_PORT:-8443}"
+    volumes:
+      # Docker-Socket: AUSNAHMSWEISE erlaubt — AIO verwaltet eigene Container
+      - /var/run/docker.sock:/var/run/docker.sock
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - ${NEXTCLOUD_DATA_DIR:-/opt/nextcloud-aio/data}:/mnt/ncdata
+    environment:
+      NEXTCLOUD_DATADIR: "${NEXTCLOUD_DATA_DIR:-/opt/nextcloud-aio/data}"
+      APACHE_PORT: "${HTTPS_PORT:-8443}"
+      APACHE_IP_BINDING: "0.0.0.0"
+      NEXTCLOUD_UPLOAD_LIMIT: "${NEXTCLOUD_UPLOAD_LIMIT:-10G}"
+      NEXTCLOUD_MAX_TIME: "${NEXTCLOUD_MAX_TIME:-3600}"
+      NEXTCLOUD_MEMORY_LIMIT: "${NEXTCLOUD_MEMORY_LIMIT:-512M}"
+      TIMEZONE: "${TIMEZONE:-Europe/Berlin}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE

@@ -1,0 +1,134 @@
+# =============================================================================
+# compose.yml — Matrix Synapse Stack (Referenz-Compose)
+# ZWECK:        Referenzdatei für manuellen Deploy (ohne Ansible)
+# DEPLOY:       docker compose up -d
+# STOP:         docker compose down
+# UPDATE:       docker compose pull && docker compose up -d
+#
+# ALLE VARIABLEN: Aus .env-Datei laden (Kopie von .env.example)
+# KONFIGURATION:  Configs in ./config/ ablegen (homeserver.yaml, nginx.conf, ...)
+# =============================================================================
+
+networks:
+  matrix_internal:
+    driver: bridge
+    internal: true
+  matrix_external:
+    driver: bridge
+
+services:
+
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
+  # KRITISCH: LC_COLLATE und LC_CTYPE MÜSSEN 'C' sein!
+  # Matrix Synapse erfordert dies für korrekte Sortierung von Raum-IDs.
+  postgres:
+    image: "postgres:${POSTGRES_VERSION:-16.4}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+    volumes:
+      - "${DATA_DIR:-/opt/matrix/data}/postgres:/var/lib/postgresql/data"
+      - "./config/init_postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+    environment:
+      POSTGRES_USER: "${DB_USER:-synapse}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Fehler: DB_PASSWORD nicht gesetzt}"
+      POSTGRES_DB: "${DB_NAME:-synapse}"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_READ_SEARCH
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-synapse}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ───────────────────────────────────────────────────────────────────
+  redis:
+    image: "redis:${REDIS_VERSION:-7.2-alpine}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+    volumes:
+      - "${DATA_DIR:-/opt/matrix/data}/redis:/data"
+      - "./config/redis.conf:/usr/local/etc/redis/redis.conf:ro"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Matrix Synapse ───────────────────────────────────────────────────────────
+  synapse:
+    image: "matrixdotorg/synapse:${SYNAPSE_VERSION:-v1.123.0}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+      - matrix_external
+    volumes:
+      - "${DATA_DIR:-/opt/matrix/data}/synapse:/data"
+      - "./config/homeserver.yaml:/config/homeserver.yaml:ro"
+    environment:
+      SYNAPSE_CONFIG_PATH: /config/homeserver.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8008/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Coturn TURN-Server ───────────────────────────────────────────────────────
+  coturn:
+    image: "coturn/coturn:${COTURN_VERSION:-4.6}"
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - "./config/coturn.conf:/etc/coturn/turnserver.conf:ro"
+      - "${BASE_DIR:-/opt/matrix}/certs:/etc/ssl:ro"
+      - "${DATA_DIR:-/opt/matrix/data}/coturn:/var/log/coturn"
+    security_opt:
+      - no-new-privileges:true
+
+  # ─── Nginx Reverse Proxy ──────────────────────────────────────────────────────
+  # KRITISCH: proxy_pass OHNE trailing slash!
+  # http://synapse:8008 — Trailing Slash verursacht Signaturfehler bei Federation!
+  nginx:
+    image: "nginx:${NGINX_VERSION:-1.27-alpine}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+      - matrix_external
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./config/nginx.conf:/etc/nginx/conf.d/matrix.conf:ro"
+      - "${BASE_DIR:-/opt/matrix}/certs:/etc/nginx/certs:ro"
+      - "${DATA_DIR:-/opt/matrix/data}/logs/nginx:/var/log/nginx"
+    depends_on:
+      synapse:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
