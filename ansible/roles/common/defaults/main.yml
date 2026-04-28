@@ -1,0 +1,63 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/common/defaults/main.yml
+# ZWECK:        Standard-Werte für die Common-Rolle.
+#               Alle Werte hier können in group_vars/host_vars überschrieben werden.
+# =============================================================================
+
+# ─── Zeitzone und Locale ─────────────────────────────────────────────────────
+timezone: "Europe/Berlin"
+locale: "de_DE.UTF-8"
+
+# ─── System-Pakete ───────────────────────────────────────────────────────────
+# Pakete die auf ALLEN Hosts installiert werden
+common_packages:
+  - curl
+  - wget
+  - git
+  - jq
+  - htop
+  - iotop
+  - vim
+  - nano
+  - unzip
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - apt-transport-https
+  - python3
+  - python3-pip
+  - fail2ban
+  - ufw
+  - logrotate
+  - rsync
+  - net-tools
+  - dnsutils
+
+# ─── SSH-Härtung ─────────────────────────────────────────────────────────────
+ssh_port: 22
+# Benutzer die SSH-Zugriff erhalten (leer = kein AllowUsers gesetzt)
+ssh_allowed_users: []
+# Maximale Login-Versuche
+ssh_max_auth_tries: 3
+# Inaktiv-Timeout in Sekunden (600 = 10 Minuten)
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+
+# ─── UFW-Firewall ────────────────────────────────────────────────────────────
+# IP-Bereiche die SSH-Zugriff erhalten (immer prüfen vor UFW-Aktivierung!)
+ufw_allowed_ssh_sources:
+  - "192.0.2.10"
+
+# ─── Fail2Ban ────────────────────────────────────────────────────────────────
+fail2ban_ssh_maxretry: 5
+fail2ban_ssh_bantime: 3600
+fail2ban_ssh_findtime: 600
+
+# ─── Kernel-Härtung (sysctl) ─────────────────────────────────────────────────
+# Aktiviert sysctl-Härtungsparameter (CIS Benchmark)
+sysctl_hardening_enabled: true
+
+# ─── Automatische Updates ────────────────────────────────────────────────────
+# Unattended-Upgrades für Sicherheits-Updates aktivieren
+unattended_upgrades_enabled: true

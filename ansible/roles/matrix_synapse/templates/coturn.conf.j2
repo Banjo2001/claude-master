@@ -1,0 +1,30 @@
+# =============================================================================
+# coturn.conf — Coturn TURN-Server Konfiguration
+# AUTOMATISCH GENERIERT durch Ansible
+# =============================================================================
+
+listening-port={{ coturn_listening_port }}
+tls-listening-port={{ coturn_tls_listening_port }}
+
+min-port={{ coturn_min_port }}
+max-port={{ coturn_max_port }}
+
+realm={{ coturn_realm }}
+
+# TURN-Authentifizierung (shared secret mit Matrix Synapse)
+use-auth-secret
+static-auth-secret={{ vault_coturn_auth_secret }}
+
+# TLS-Zertifikate
+cert=/etc/ssl/certs/matrix.{{ matrix_domain }}.pem
+pkey=/etc/ssl/private/matrix.{{ matrix_domain }}.key
+
+# Logging
+log-file=/var/log/coturn/turnserver.log
+verbose
+
+# Keine eigene Benutzer-Datenbank
+no-auth
+
+# Sicherheit: nur TURN erlauben (kein STUN-only)
+no-stun

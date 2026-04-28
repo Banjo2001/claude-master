@@ -1,0 +1,33 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/postgres.yml
+# ZWECK:        PostgreSQL für Matrix Synapse konfigurieren
+# KRITISCH:     LC_COLLATE='C' und LC_CTYPE='C' sind PFLICHT für Synapse!
+#               Falsche Locale führt zu Datenbankfehlern beim Matrix-Update.
+# ROLLBACK:     docker compose down; rm -rf /opt/matrix/data/postgres; neu starten
+# =============================================================================
+
+- name: "PostgreSQL Initialisierungs-Skript erstellen"
+  ansible.builtin.copy:
+    dest: "{{ matrix_config_dir }}/init_postgres.sql"
+    content: |
+      -- Matrix Synapse PostgreSQL Initialisierung
+      -- KRITISCH: LC_COLLATE und LC_CTYPE MÜSSEN 'C' sein!
+      -- Quelle: https://matrix-org.github.io/synapse/latest/postgres.html
+
+      CREATE USER {{ matrix_db_user }}
+        WITH PASSWORD '{{ vault_matrix_db_password }}'
+        CREATEDB;
+
+      CREATE DATABASE {{ matrix_db_name }}
+        ENCODING 'UTF8'
+        LC_COLLATE='C'
+        LC_CTYPE='C'
+        template=template0
+        OWNER {{ matrix_db_user }};
+
+      GRANT ALL PRIVILEGES ON DATABASE {{ matrix_db_name }} TO {{ matrix_db_user }};
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true

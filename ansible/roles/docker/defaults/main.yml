@@ -1,0 +1,27 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/docker/defaults/main.yml
+# ZWECK:        Standard-Werte für die Docker-Rolle
+# =============================================================================
+
+# Docker CE Version (leer = aktuellste verfügbare Version)
+docker_version: ""
+
+# Docker-Benutzer (werden zur docker-Gruppe hinzugefügt)
+docker_users: []
+
+# Docker-Daemon Konfiguration
+docker_daemon_config:
+  # Log-Treiber: json-file mit Rotation
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  # Kein IPv6 standardmäßig
+  ipv6: false
+  # Storage-Treiber: overlay2 (empfohlen für Linux)
+  storage-driver: "overlay2"
+  # Live-Restore: Container laufen bei Docker-Neustart weiter
+  live-restore: true
+  # Userland-Proxy deaktivieren (Performance)
+  userland-proxy: false

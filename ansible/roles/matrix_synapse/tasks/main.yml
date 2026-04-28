@@ -1,0 +1,38 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/main.yml
+# ZWECK:        Matrix Synapse Stack deployen (PostgreSQL, Redis, Synapse, Coturn, Nginx)
+# DEPLOY:       ansible-playbook ansible/playbooks/matrix_synapse.yml
+# ROLLBACK:     docker compose -f /opt/matrix/compose.yml down
+# =============================================================================
+
+- name: "Verzeichnisse erstellen"
+  ansible.builtin.include_tasks: directories.yml
+
+- name: "PostgreSQL konfigurieren"
+  ansible.builtin.include_tasks: postgres.yml
+  tags: postgres
+
+- name: "Redis konfigurieren"
+  ansible.builtin.include_tasks: redis.yml
+  tags: redis
+
+- name: "Matrix Synapse konfigurieren"
+  ansible.builtin.include_tasks: synapse.yml
+  tags: synapse
+
+- name: "Coturn TURN-Server konfigurieren"
+  ansible.builtin.include_tasks: coturn.yml
+  tags: coturn
+
+- name: "Nginx Reverse Proxy konfigurieren"
+  ansible.builtin.include_tasks: nginx.yml
+  tags: nginx
+
+- name: "Docker Compose starten"
+  ansible.builtin.include_tasks: compose.yml
+  tags: compose
+
+- name: "Firewall-Regeln für Matrix"
+  ansible.builtin.include_tasks: firewall.yml
+  tags: firewall

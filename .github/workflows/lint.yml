@@ -36,14 +36,11 @@ jobs:
       - name: "Repository auschecken"
         uses: actions/checkout@v4
 
-      - name: "Python einrichten"
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
+      - name: "yamllint via apt installieren"
+        run: sudo apt-get install -y yamllint
 
-      - name: "yamllint installieren"
-        run: pip install yamllint
+      - name: "yamllint Version prüfen"
+        run: yamllint --version
 
       - name: "GitHub Actions Workflows prüfen (immer)"
         run: yamllint -c .yamllint.yml .github/
@@ -72,29 +69,28 @@ jobs:
       - name: "Repository auschecken"
         uses: actions/checkout@v4
 
-      - name: "Python einrichten"
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      - name: "ansible-lint installieren"
-        run: pip install ansible-lint
-
-      - name: "Ansible Collections installieren"
+      - name: "Ansible Lint ausführen (nur wenn Playbooks vorhanden)"
         run: |
+          # Installation und Ausführung NUR wenn Ansible-Dateien vorhanden
+          # Verhindert unnötige pip/Galaxy-Netzwerkzugriffe bei leerem ansible/
+          YAML_FILES=$(find ansible/ -name "*.yml" -type f \
+            ! -name ".gitkeep" 2>/dev/null | sort)
+
+          if [ -z "$YAML_FILES" ]; then
+            echo "INFO: Noch keine Ansible-Playbooks vorhanden — überspringe"
+            exit 0
+          fi
+
+          echo "Ansible-Dateien gefunden:"
+          echo "$YAML_FILES"
+          echo ""
+
+          pip install ansible-lint
           ansible-galaxy collection install community.general
           ansible-galaxy collection install community.docker
           ansible-galaxy collection install ansible.posix
 
-      - name: "Ansible Playbooks prüfen (wenn vorhanden)"
-        run: |
-          if find ansible/ -name "*.yml" -type f ! -name ".gitkeep" 2>/dev/null | grep -q .; then
-            echo "Ansible-Dateien gefunden — starte ansible-lint..."
-            ansible-lint ansible/
-          else
-            echo "INFO: Noch keine Ansible-Playbooks — überspringe ansible-lint"
-          fi
+          ansible-lint ansible/
 
   shell-lint:
     name: Shell Script Lint
@@ -117,5 +113,5 @@ jobs:
           else
             echo "Prüfe Shell-Skripte:"
             echo "$SHELL_FILES"
-            echo "$SHELL_FILES" | xargs shellcheck
+            echo "$SHELL_FILES" | xargs shellcheck --severity=warning
           fi

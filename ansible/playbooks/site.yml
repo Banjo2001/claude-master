@@ -1,0 +1,19 @@
+---
+# =============================================================================
+# DATEI:        ansible/playbooks/site.yml
+# ZWECK:        Master-Playbook — konfiguriert alle Hosts in der richtigen Reihenfolge
+# AUFRUFEN:     ansible-playbook ansible/playbooks/site.yml
+# ROLLBACK:     Jeden Schritt einzeln rückgängig machen (siehe Rollen-Dokumentation)
+# =============================================================================
+
+- name: "Basis-Konfiguration für alle Hosts"
+  ansible.builtin.import_playbook: common.yml
+
+- name: "Docker-Installation auf App-Servern"
+  ansible.builtin.import_playbook: docker.yml
+
+- name: "Matrix Synapse Deploy"
+  ansible.builtin.import_playbook: matrix_synapse.yml
+
+- name: "Nextcloud AIO Deploy"
+  ansible.builtin.import_playbook: nextcloud_aio.yml

@@ -1,0 +1,94 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/common/tasks/ssh_hardening.yml
+# ZWECK:        SSH-Härtung nach BSI-Empfehlungen
+# ROLLBACK:     cp /etc/ssh/sshd_config.bak.DATUM /etc/ssh/sshd_config
+#               systemctl restart sshd
+# KRITISCH:     IMMER zuerst in separatem Terminal SSH-Verbindung testen
+#               bevor altes Terminal geschlossen wird!
+# =============================================================================
+
+- name: "SICHERUNG: sshd_config sichern vor Änderung"
+  ansible.builtin.copy:
+    src: /etc/ssh/sshd_config
+    dest: "/etc/ssh/sshd_config.bak.{{ ansible_date_time.date }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: "SSH Port setzen"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port\s'
+    line: "Port {{ ssh_port }}"
+    state: present
+  notify: restart_sshd
+
+- name: "Root-Login per Passwort deaktivieren"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin\s'
+    line: "PermitRootLogin prohibit-password"
+    state: present
+  notify: restart_sshd
+
+- name: "Passwort-Authentifizierung deaktivieren"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication\s'
+    line: "PasswordAuthentication no"
+    state: present
+  notify: restart_sshd
+
+- name: "X11 Forwarding deaktivieren"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?X11Forwarding\s'
+    line: "X11Forwarding no"
+    state: present
+  notify: restart_sshd
+
+- name: "Maximale Auth-Versuche setzen"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?MaxAuthTries\s'
+    line: "MaxAuthTries {{ ssh_max_auth_tries }}"
+    state: present
+  notify: restart_sshd
+
+- name: "Client-Alive-Interval setzen (Inaktivitäts-Timeout)"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ClientAliveInterval\s'
+    line: "ClientAliveInterval {{ ssh_client_alive_interval }}"
+    state: present
+  notify: restart_sshd
+
+- name: "Client-Alive-Count setzen"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ClientAliveCountMax\s'
+    line: "ClientAliveCountMax {{ ssh_client_alive_count_max }}"
+    state: present
+  notify: restart_sshd
+
+- name: "Nur ed25519 und ecdsa Host-Keys aktivieren"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?HostKey /etc/ssh/ssh_host_rsa_key'
+    line: "#HostKey /etc/ssh/ssh_host_rsa_key"
+    state: present
+  notify: restart_sshd
+
+- name: "UsePAM aktivieren"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?UsePAM\s'
+    line: "UsePAM yes"
+    state: present
+  notify: restart_sshd
+
+- name: "SSH-Konfiguration validieren vor Neustart"
+  ansible.builtin.command: sshd -t
+  changed_when: false

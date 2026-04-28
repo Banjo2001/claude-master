@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/docker/handlers/main.yml
+# ZWECK:        Handler für die Docker-Rolle
+# =============================================================================
+
+- name: "Restart docker"
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+  listen: restart_docker

@@ -1,0 +1,35 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/common/tasks/fail2ban.yml
+# ZWECK:        Fail2Ban für SSH-Brute-Force-Schutz konfigurieren
+# ROLLBACK:     systemctl stop fail2ban; apt remove fail2ban
+# =============================================================================
+
+- name: "Fail2Ban jail.local für SSH konfigurieren"
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      # Globale Einstellungen
+      bantime  = {{ fail2ban_ssh_bantime }}
+      findtime = {{ fail2ban_ssh_findtime }}
+      maxretry = {{ fail2ban_ssh_maxretry }}
+      backend  = systemd
+
+      [sshd]
+      enabled  = true
+      port     = {{ ssh_port }}
+      filter   = sshd
+      logpath  = %(sshd_log)s
+      maxretry = {{ fail2ban_ssh_maxretry }}
+      bantime  = {{ fail2ban_ssh_bantime }}
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart_fail2ban
+
+- name: "Fail2Ban starten und aktivieren"
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true

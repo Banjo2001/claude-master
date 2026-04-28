@@ -1,0 +1,68 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/defaults/main.yml
+# ZWECK:        Standard-Werte für die Matrix Synapse Rolle
+#               Secrets (vault_*) werden aus vault.yml geladen
+# SICHERHEIT:   NIEMALS echte Secrets hier eintragen! Nur Platzhalter.
+# =============================================================================
+
+# ─── Matrix Domain ───────────────────────────────────────────────────────────
+# Beispiel: example.com (OHNE https://)
+matrix_domain: "<DEINE_DOMAIN>"
+matrix_server_name: "{{ matrix_domain }}"
+matrix_public_baseurl: "https://matrix.{{ matrix_domain }}"
+
+# ─── Docker-Images (KEINE :latest außer explizit begründet!) ─────────────────
+# Versionen von docs/knowledge/matrix_synapse_playbook_knowledge.md
+matrix_synapse_image: "matrixdotorg/synapse:v1.123.0"
+matrix_postgres_image: "postgres:16.4"
+matrix_redis_image: "redis:7.2-alpine"
+matrix_coturn_image: "coturn/coturn:4.6"
+matrix_nginx_image: "nginx:1.27-alpine"
+
+# ─── Verzeichnisse ────────────────────────────────────────────────────────────
+matrix_base_dir: "/opt/matrix"
+matrix_data_dir: "{{ matrix_base_dir }}/data"
+matrix_config_dir: "{{ matrix_base_dir }}/config"
+matrix_logs_dir: "{{ matrix_base_dir }}/logs"
+
+# ─── PostgreSQL ───────────────────────────────────────────────────────────────
+# KRITISCH: LC_COLLATE und LC_CTYPE MÜSSEN 'C' sein für Matrix!
+matrix_db_name: "synapse"
+matrix_db_user: "synapse"
+matrix_db_host: "localhost"
+matrix_db_port: 5432
+matrix_db_locale: "C"
+
+# ─── Redis ───────────────────────────────────────────────────────────────────
+matrix_redis_host: "localhost"
+matrix_redis_port: 6379
+
+# ─── Coturn TURN-Server ───────────────────────────────────────────────────────
+coturn_listening_port: 3478
+coturn_tls_listening_port: 5349
+coturn_min_port: 49152
+coturn_max_port: 65535
+coturn_realm: "{{ matrix_domain }}"
+
+# ─── Matrix Ports ─────────────────────────────────────────────────────────────
+# Port 80/443: Nginx (HTTP/HTTPS)
+# Port 8008: Synapse intern (nur localhost, über Nginx erreichbar)
+matrix_synapse_port: 8008
+
+# ─── Sicherheit ───────────────────────────────────────────────────────────────
+# KRITISCH: Registrierung NIEMALS aktivieren ohne weiteren Schutz!
+matrix_enable_registration: false
+# Gastnutzer (unauthentifizierter Lesezugriff) — IMMER deaktiviert
+matrix_allow_guest_access: false
+# Raum-Verzeichnis: nur lokale Räume zeigen
+matrix_enable_room_list_search: false
+
+# ─── TLS / Let's Encrypt ──────────────────────────────────────────────────────
+matrix_letsencrypt_email: "<DEINE_EMAIL>"
+
+# ─── Nginx ───────────────────────────────────────────────────────────────────
+# KRITISCH: Kein trailing slash bei proxy_pass!
+# Falsch:   proxy_pass http://localhost:8008/;
+# Richtig:  proxy_pass http://localhost:8008;
+matrix_nginx_client_max_body_size: "50M"

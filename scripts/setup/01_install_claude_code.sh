@@ -128,13 +128,13 @@ else
         read -r -s -p "  API-Key eingeben (wird nicht angezeigt): " API_KEY
         echo ""
 
-        # Grundlegende Validierung: Key fängt mit 'sk-ant-' an
+        # Grundlegende Validierung: Key beginnt mit 'sk-ant-'
         if [[ "$API_KEY" != sk-ant-* ]]; then
-            log_warn "Key-Format ungewöhnlich (erwartet: sk-ant-...)"
+            log_warn "Key-Format ungewöhnlich (erwartet: sk-ant-... Format)"
             read -r -p "  Trotzdem speichern? [j/N] " CONFIRM
             if [[ ! "$CONFIRM" =~ ^[jJyY]$ ]]; then
                 log_info "Key nicht gespeichert — manuell setzen mit:"
-                log_info "  export ANTHROPIC_API_KEY='sk-ant-...'"
+                log_info "  export ANTHROPIC_API_KEY='<DEIN_API_KEY>'"
                 exit 0
             fi
         fi
@@ -168,7 +168,7 @@ SECRETEOF
         log_ok "API-Key für diese Session aktiviert"
     else
         log_info "Key nicht eingerichtet. Manuell setzen:"
-        log_info "  export ANTHROPIC_API_KEY='sk-ant-...'"
+        log_info "  export ANTHROPIC_API_KEY='<DEIN_API_KEY>'"
     fi
 fi
 

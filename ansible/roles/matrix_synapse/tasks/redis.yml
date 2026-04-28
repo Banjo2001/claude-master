@@ -1,0 +1,26 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/redis.yml
+# ZWECK:        Redis-Konfiguration für Matrix Synapse (Worker-Koordination)
+# ROLLBACK:     docker compose down redis
+# =============================================================================
+
+- name: "Redis-Konfigurationsdatei erstellen"
+  ansible.builtin.copy:
+    dest: "{{ matrix_config_dir }}/redis.conf"
+    content: |
+      # Redis Konfiguration für Matrix Synapse
+      # Nur lokale Verbindungen erlauben
+      bind 127.0.0.1
+      port {{ matrix_redis_port }}
+      # Passwort (optional für lokale Deployments)
+      # requirepass your_password_here
+      # Persistenz deaktivieren (nur Cache, kein persistenter Zustand)
+      save ""
+      appendonly no
+      # Maximaler Arbeitsspeicher
+      maxmemory 256mb
+      maxmemory-policy allkeys-lru
+    owner: "999"
+    group: "999"
+    mode: "0640"

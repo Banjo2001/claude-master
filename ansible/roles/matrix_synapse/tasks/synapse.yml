@@ -1,0 +1,35 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/matrix_synapse/tasks/synapse.yml
+# ZWECK:        Matrix Synapse homeserver.yaml konfigurieren
+# KRITISCH:     enable_registration IMMER false halten!
+# ROLLBACK:     cp /opt/matrix/config/homeserver.yaml.bak /opt/matrix/config/homeserver.yaml
+# =============================================================================
+
+- name: "SICHERUNG: homeserver.yaml sichern (falls vorhanden)"
+  ansible.builtin.copy:
+    src: "{{ matrix_config_dir }}/homeserver.yaml"
+    dest: "{{ matrix_config_dir }}/homeserver.yaml.bak.{{ ansible_date_time.date }}"
+    remote_src: true
+  ignore_errors: true
+
+- name: "Synapse homeserver.yaml aus Template deployen"
+  ansible.builtin.template:
+    src: homeserver.yaml.j2
+    dest: "{{ matrix_config_dir }}/homeserver.yaml"
+    owner: "991"
+    group: "991"
+    mode: "0640"
+  notify: restart_synapse
+
+- name: "Synapse Signing Key generieren (falls nicht vorhanden)"
+  ansible.builtin.command: >
+    docker run --rm
+    -v {{ matrix_data_dir }}/synapse:/data
+    -e SYNAPSE_SERVER_NAME={{ matrix_server_name }}
+    -e SYNAPSE_REPORT_STATS=no
+    {{ matrix_synapse_image }}
+    generate
+  args:
+    creates: "{{ matrix_data_dir }}/synapse/{{ matrix_server_name }}.signing.key"
+  changed_when: true

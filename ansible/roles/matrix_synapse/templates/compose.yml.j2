@@ -1,0 +1,127 @@
+# =============================================================================
+# compose.yml — Matrix Synapse Stack
+# AUTOMATISCH GENERIERT durch Ansible
+# DEPLOY:  docker compose -f /opt/matrix/compose.yml up -d
+# STOP:    docker compose -f /opt/matrix/compose.yml down
+# UPDATE:  docker compose -f /opt/matrix/compose.yml pull && ... up -d
+# =============================================================================
+
+networks:
+  matrix_internal:
+    driver: bridge
+    internal: true
+  matrix_external:
+    driver: bridge
+
+services:
+
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: "{{ matrix_postgres_image }}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+    volumes:
+      - "{{ matrix_data_dir }}/postgres:/var/lib/postgresql/data"
+      - "{{ matrix_config_dir }}/init_postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+    environment:
+      POSTGRES_USER: "{{ matrix_db_user }}"
+      POSTGRES_PASSWORD: "{{ vault_matrix_db_password }}"
+      POSTGRES_DB: "{{ matrix_db_name }}"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_READ_SEARCH
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ matrix_db_user }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ───────────────────────────────────────────────────────────────────
+  redis:
+    image: "{{ matrix_redis_image }}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+    volumes:
+      - "{{ matrix_data_dir }}/redis:/data"
+      - "{{ matrix_config_dir }}/redis.conf:/usr/local/etc/redis/redis.conf:ro"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Matrix Synapse ───────────────────────────────────────────────────────────
+  synapse:
+    image: "{{ matrix_synapse_image }}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+      - matrix_external
+    volumes:
+      - "{{ matrix_data_dir }}/synapse:/data"
+      - "{{ matrix_config_dir }}/homeserver.yaml:/config/homeserver.yaml:ro"
+    environment:
+      SYNAPSE_CONFIG_PATH: /config/homeserver.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8008/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Coturn TURN-Server ───────────────────────────────────────────────────────
+  coturn:
+    image: "{{ matrix_coturn_image }}"
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - "{{ matrix_config_dir }}/coturn.conf:/etc/coturn/turnserver.conf:ro"
+      - "{{ matrix_base_dir }}/certs:/etc/ssl:ro"
+      - "{{ matrix_data_dir }}/coturn:/var/log/coturn"
+    security_opt:
+      - no-new-privileges:true
+
+  # ─── Nginx Reverse Proxy ──────────────────────────────────────────────────────
+  nginx:
+    image: "{{ matrix_nginx_image }}"
+    restart: unless-stopped
+    networks:
+      - matrix_internal
+      - matrix_external
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "{{ matrix_config_dir }}/nginx.conf:/etc/nginx/conf.d/matrix.conf:ro"
+      - "{{ matrix_base_dir }}/certs:/etc/nginx/certs:ro"
+      - "{{ matrix_logs_dir }}/nginx:/var/log/nginx"
+    depends_on:
+      synapse:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE

@@ -1,0 +1,67 @@
+# =============================================================================
+# sshd_config — SSH-Server Konfiguration
+# AUTOMATISCH GENERIERT durch Ansible (ansible/roles/common/templates/sshd_config.j2)
+# MANUELL NICHT BEARBEITEN — Änderungen werden überschrieben!
+# Einstellungen in: ansible/roles/common/defaults/main.yml
+# =============================================================================
+
+# ─── Netzwerk ─────────────────────────────────────────────────────────────────
+Port {{ ssh_port }}
+AddressFamily inet
+ListenAddress 0.0.0.0
+
+# ─── Host-Keys (nur moderne Algorithmen) ─────────────────────────────────────
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+# RSA deaktiviert (veraltet):
+# HostKey /etc/ssh/ssh_host_rsa_key
+
+# ─── Authentifizierung ────────────────────────────────────────────────────────
+# Root-Login: nur mit Key (kein Passwort)
+PermitRootLogin prohibit-password
+# Passwort-Login generell deaktiviert
+PasswordAuthentication no
+# Challenge-Response (PAM) deaktiviert
+ChallengeResponseAuthentication no
+# Keys erlaubt
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+# Maximale Fehlversuche beim Login
+MaxAuthTries {{ ssh_max_auth_tries }}
+
+# ─── Sitzungs-Einstellungen ───────────────────────────────────────────────────
+# Inaktive Verbindungen automatisch trennen
+ClientAliveInterval {{ ssh_client_alive_interval }}
+ClientAliveCountMax {{ ssh_client_alive_count_max }}
+
+# ─── Sicherheits-Härtung ─────────────────────────────────────────────────────
+# X11-Weiterleitung deaktiviert (nicht benötigt, Angriffsfläche)
+X11Forwarding no
+# Agent-Forwarding deaktiviert (Sicherheitsrisiko)
+AllowAgentForwarding no
+# TCP-Forwarding deaktiviert (kein Tunneling außer bei Bedarf)
+AllowTcpForwarding no
+# PermitTunnel deaktiviert
+PermitTunnel no
+# Leere Passwörter verboten
+PermitEmptyPasswords no
+# .rhosts und ähnliche Files ignorieren
+IgnoreRhosts yes
+# Host-basierte Authentifizierung deaktiviert
+HostbasedAuthentication no
+
+# ─── Login-Banner ─────────────────────────────────────────────────────────────
+# Warnung vor unbefugtem Zugriff (rechtlich relevant)
+Banner /etc/issue.net
+
+# ─── PAM ──────────────────────────────────────────────────────────────────────
+UsePAM yes
+
+# ─── SFTP ────────────────────────────────────────────────────────────────────
+# Interner SFTP-Server (sicherer als externe sftp-server Binary)
+Subsystem sftp internal-sftp
+
+{% if ssh_allowed_users | length > 0 %}
+# ─── Erlaubte Benutzer ────────────────────────────────────────────────────────
+AllowUsers {{ ssh_allowed_users | join(' ') }}
+{% endif %}

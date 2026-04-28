@@ -1,0 +1,64 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/common/tasks/sysctl.yml
+# ZWECK:        Kernel-Härtung via sysctl (CIS Benchmark Level 1)
+# ROLLBACK:     sysctl --system (lädt alle sysctl.conf Dateien neu)
+# =============================================================================
+
+- name: "Sysctl-Härtungsdatei deployen"
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-hardening.conf
+    content: |
+      # =============================================================
+      # Kernel-Härtung — CIS Benchmark Level 1
+      # Automatisch durch Ansible deployt
+      # =============================================================
+
+      # ─── Netzwerk: IP-Forwarding (nur für Router aktivieren) ────
+      net.ipv4.ip_forward = 0
+      net.ipv6.conf.all.forwarding = 0
+
+      # ─── Netzwerk: SYN-Flood-Schutz ─────────────────────────────
+      net.ipv4.tcp_syncookies = 1
+      net.ipv4.tcp_syn_retries = 5
+      net.ipv4.tcp_synack_retries = 2
+
+      # ─── Netzwerk: ICMP-Redirect deaktivieren ───────────────────
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.default.accept_redirects = 0
+      net.ipv6.conf.all.accept_redirects = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.conf.default.send_redirects = 0
+
+      # ─── Netzwerk: Source-Routing deaktivieren ──────────────────
+      net.ipv4.conf.all.accept_source_route = 0
+      net.ipv4.conf.default.accept_source_route = 0
+      net.ipv6.conf.all.accept_source_route = 0
+
+      # ─── Netzwerk: Martian Packets loggen ───────────────────────
+      net.ipv4.conf.all.log_martians = 1
+      net.ipv4.conf.default.log_martians = 1
+
+      # ─── Netzwerk: Reverse Path Filtering ───────────────────────
+      net.ipv4.conf.all.rp_filter = 1
+      net.ipv4.conf.default.rp_filter = 1
+
+      # ─── Kernel: ASLR (Address Space Layout Randomization) ──────
+      kernel.randomize_va_space = 2
+
+      # ─── Kernel: Core Dumps deaktivieren ────────────────────────
+      fs.suid_dumpable = 0
+
+      # ─── Kernel: Dmesg-Zugriff einschränken ─────────────────────
+      kernel.dmesg_restrict = 1
+
+      # ─── Kernel: Magic SysRq deaktivieren ───────────────────────
+      kernel.sysrq = 0
+    owner: root
+    group: root
+    mode: "0644"
+  notify: apply_sysctl
+
+- name: "Sysctl-Einstellungen sofort anwenden"
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/99-hardening.conf
+  changed_when: false
