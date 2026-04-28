@@ -90,6 +90,23 @@ jobs:
           ansible-galaxy collection install community.docker
           ansible-galaxy collection install ansible.posix
 
+          # WARUM dummy vault_password + dummy vars/vault: ansible.cfg setzt
+          # vault_password_file = ~/.vault_pass.txt. ansible-lint führt
+          # syntax-check aus, das vars_files lädt. In CI existieren weder
+          # die Passwortdatei noch vars.yml/vault.yml (sind .gitignored).
+          # Dummy-Werte erlauben syntax-check, das committierte Repo enthält
+          # nur .example-Dateien (keine echten Secrets in CI nötig).
+          echo "ci-dummy-vault-password" > ~/.vault_pass.txt
+          chmod 600 ~/.vault_pass.txt
+
+          VAULT_DIR="ansible/inventories/prod/group_vars/all"
+          if [ ! -f "$VAULT_DIR/vars.yml" ]; then
+            cp "$VAULT_DIR/vars.yml.example" "$VAULT_DIR/vars.yml"
+          fi
+          if [ ! -f "$VAULT_DIR/vault.yml" ]; then
+            cp "$VAULT_DIR/vault.yml.example" "$VAULT_DIR/vault.yml"
+          fi
+
           ansible-lint ansible/
 
   shell-lint:
