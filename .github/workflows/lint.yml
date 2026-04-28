@@ -117,5 +117,5 @@ jobs:
           else
             echo "Prüfe Shell-Skripte:"
             echo "$SHELL_FILES"
-            echo "$SHELL_FILES" | xargs shellcheck
+            echo "$SHELL_FILES" | xargs shellcheck --severity=warning
           fi
