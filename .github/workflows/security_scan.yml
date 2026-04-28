@@ -48,11 +48,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: "gitleaks herunterladen"
+        run: |
+          curl -fsSL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz" \
+            -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          chmod +x /tmp/gitleaks
+          /tmp/gitleaks version
+
       - name: "gitleaks Secret Scan ausführen"
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_CONFIG: "${{ github.workspace }}/.gitleaks.toml"
+        run: /tmp/gitleaks detect --source . --config .gitleaks.toml --verbose
 
   env-file-check:
     name: Check für .env-Dateien im Repo
