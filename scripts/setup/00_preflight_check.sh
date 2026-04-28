@@ -105,7 +105,10 @@ echo "[ Basis-Tools ]"
 check_tool() {
     local tool="$1"
     local version_flag="${2:---version}"
+    # min_version ist für zukünftige Versions-Prüfungen reserviert
     local min_version="${3:-}"
+    # shellcheck disable=SC2034
+    : "${min_version}"
 
     if command -v "$tool" &>/dev/null; then
         local version
@@ -231,7 +234,7 @@ else
     log_info "Oder manuell: https://github.com/gitleaks/gitleaks/releases"
 fi
 
-# shellcheck — Shell-Skript-Linter
+# Pruefe: shellcheck (Shell-Skript-Linter)
 if command -v shellcheck &>/dev/null; then
     log_ok "shellcheck: $(shellcheck --version 2>&1 | head -2 | tail -1)"
 else
