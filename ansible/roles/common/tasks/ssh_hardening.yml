@@ -89,6 +89,22 @@
     state: present
   notify: restart_sshd
 
+- name: "TCP-Forwarding deaktivieren (kein SSH-Tunneling)"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?AllowTcpForwarding\s'
+    line: "AllowTcpForwarding no"
+    state: present
+  notify: restart_sshd
+
+- name: "Agent-Forwarding deaktivieren"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?AllowAgentForwarding\s'
+    line: "AllowAgentForwarding no"
+    state: present
+  notify: restart_sshd
+
 - name: "SSH-Konfiguration validieren vor Neustart"
   ansible.builtin.command: sshd -t
   changed_when: false

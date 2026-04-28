@@ -364,6 +364,28 @@ IFS=$'\n\t'
 
 ---
 
+### 2026-04-28 — Phase 6: Deploy-Vorbereitung, Bugfixes Runde 2, neue Dateien
+
+**Neue Dateien:**
+- `ansible/inventories/prod/hosts.yml` — Template mit RFC-5737-Platzhaltern (versioniert)
+- `ansible/inventories/prod/group_vars/all/vars.yml` — Konfigurationstemplate (versioniert)
+- `docs/knowledge/letsencrypt_certbot.md` — Let's Encrypt / certbot Wissensdatenbank
+- `docs/actionlog.md` — Persistentes KI-Gedächtnis: Projektstatus, Tasks, Notizen
+- `prompt.txt` — Claude Code Startprompt für Post-Installation Deploy-Fortsetzung
+
+**Bugfixes Runde 2 (zweite vollständige Korrektheitsprüfung):**
+- `ansible/roles/docker/tasks/main.yml`: Keyring-Verzeichnis wird jetzt VOR GPG-Key-Import erstellt (war kritische Reihenfolge-Bug)
+- `ansible.cfg`: `vault_password_file = ~/.vault_pass.txt` ergänzt (fehlte völlig — Vault war ohne Passwort-File nicht nutzbar)
+- `ansible/roles/matrix_synapse/templates/nginx.conf.j2`: `listen 443 ssl http2` → `listen 443 ssl; http2 on;` (deprecated seit nginx 1.25)
+- `ansible/roles/matrix_synapse/tasks/firewall.yml`: Kommentare "STUN/TURN" → "TURN" (no-stun ist aktiv, STUN deaktiviert)
+- `ansible/roles/common/tasks/sysctl.yml`: `net.ipv4.ip_forward = 0` → `= 1` (Docker benötigt IP-Forwarding!)
+- `ansible/roles/matrix_synapse/tasks/nginx.yml`: `certbot --cert-path` → `--config-dir` (--cert-path existiert für certonly nicht), Work/Logs-Dirs ergänzt
+- `ansible/roles/matrix_synapse/tasks/nginx.yml`: Pre-certbot UFW-Task hinzugefügt (Port 80 muss vor HTTP-01 Challenge offen sein)
+- `ansible/roles/common/defaults/main.yml`: `certbot` zu `common_packages` hinzugefügt (war nicht installiert)
+- `ansible/roles/common/tasks/ssh_hardening.yml`: `AllowTcpForwarding no` und `AllowAgentForwarding no` ergänzt (fehlten in lineinfile-Tasks, sind aber in Template)
+
+---
+
 *Stand: 2026-04 — Proxmox VE 9.x, PBS 4.x, Debian 13, Ubuntu 24.04*
 *Diese Datei wird mit dem Repo versioniert.*
 *Unterer Abschnitt (Changelog) bei jeder Sitzung aktualisieren.*

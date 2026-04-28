@@ -19,26 +19,26 @@
     proto: tcp
     comment: "HTTPS (Matrix)"
 
-- name: "UFW — Coturn STUN/TURN TCP öffnen"
+- name: "UFW — Coturn TURN TCP öffnen"
   community.general.ufw:
     rule: allow
     port: "{{ coturn_listening_port }}"
     proto: tcp
-    comment: "Coturn STUN/TURN TCP"
+    comment: "Coturn TURN TCP"
 
-- name: "UFW — Coturn STUN/TURN UDP öffnen"
+- name: "UFW — Coturn TURN UDP öffnen"
   community.general.ufw:
     rule: allow
     port: "{{ coturn_listening_port }}"
     proto: udp
-    comment: "Coturn STUN/TURN UDP"
+    comment: "Coturn TURN UDP"
 
-- name: "UFW — Coturn TLS TCP öffnen"
+- name: "UFW — Coturn TURN TLS TCP öffnen"
   community.general.ufw:
     rule: allow
     port: "{{ coturn_tls_listening_port }}"
     proto: tcp
-    comment: "Coturn STUN/TURN TLS TCP"
+    comment: "Coturn TURN TLS TCP"
 
 - name: "UFW — Coturn Media-Port-Range UDP öffnen"
   community.general.ufw:
