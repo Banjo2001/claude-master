@@ -1,0 +1,121 @@
+# =============================================================================
+# DATEI:    .github/workflows/lint.yml
+# ZWECK:    Prüft Ansible-Dateien und YAML auf Syntax und Best Practices
+#           bei jedem Push und Pull Request.
+#
+# WAS WIRD GEPRÜFT:
+#   - yamllint: YAML-Syntax und Formatierung
+#   - ansible-lint: Ansible Best Practices und Sicherheit
+#   - shellcheck: Shell-Skripte auf Fehler prüfen
+# =============================================================================
+
+name: Ansible Lint + YAML Lint
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "claude/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yamllint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "Python einrichten"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: "yamllint installieren"
+        run: pip install yamllint
+
+      - name: "GitHub Actions Workflows prüfen (immer)"
+        run: yamllint -c .yamllint.yml .github/
+
+      - name: "Ansible YAML-Dateien prüfen (wenn vorhanden)"
+        run: |
+          # WICHTIG: Klammern um -o Alternativen, damit find korrekt sucht!
+          # Ohne Klammern: find sucht *.yaml überall im System, nicht nur in ansible/
+          YAML_FILES=$(find ansible/ \( -name "*.yml" -o -name "*.yaml" \) \
+            -type f ! -name ".gitkeep" 2>/dev/null | sort)
+
+          if [ -z "$YAML_FILES" ]; then
+            echo "INFO: Noch keine Ansible YAML-Dateien vorhanden — überspringe"
+          else
+            echo "Prüfe Ansible YAML-Dateien:"
+            echo "$YAML_FILES"
+            echo "$YAML_FILES" | xargs yamllint -c .yamllint.yml
+          fi
+
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    needs: yamllint
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "Python einrichten"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: "ansible-lint installieren"
+        run: pip install ansible-lint
+
+      - name: "Ansible Collections installieren"
+        run: |
+          ansible-galaxy collection install community.general
+          ansible-galaxy collection install community.docker
+          ansible-galaxy collection install ansible.posix
+
+      - name: "Ansible Playbooks prüfen (wenn vorhanden)"
+        run: |
+          if find ansible/ -name "*.yml" -type f ! -name ".gitkeep" 2>/dev/null | grep -q .; then
+            echo "Ansible-Dateien gefunden — starte ansible-lint..."
+            ansible-lint ansible/
+          else
+            echo "INFO: Noch keine Ansible-Playbooks — überspringe ansible-lint"
+          fi
+
+  shell-lint:
+    name: Shell Script Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Repository auschecken"
+        uses: actions/checkout@v4
+
+      - name: "shellcheck installieren"
+        run: sudo apt-get install -y shellcheck
+
+      - name: "Shell-Skripte prüfen (wenn vorhanden)"
+        run: |
+          SHELL_FILES=$(find . -path './.git' -prune -o \
+            -name "*.sh" -type f -print 2>/dev/null | sort)
+
+          if [ -z "$SHELL_FILES" ]; then
+            echo "INFO: Noch keine Shell-Skripte — überspringe shellcheck"
+          else
+            echo "Prüfe Shell-Skripte:"
+            echo "$SHELL_FILES"
+            echo "$SHELL_FILES" | xargs shellcheck
+          fi

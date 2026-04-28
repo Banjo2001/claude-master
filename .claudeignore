@@ -1,0 +1,51 @@
+# =============================================================================
+# .claudeignore — Claude Code Zugriffsschutz
+# ZWECK: Verhindert, dass Claude Code auf sensible oder irrelevante Dateien
+#        zugreift. Ergänzt .gitignore mit Claude-spezifischen Einträgen.
+#
+# WICHTIG: Diese Datei schützt lokale Daten, die NICHT im Repo sind.
+# =============================================================================
+
+# --- Alles aus .gitignore ---
+.env
+*.env.*
+*.env
+.env.local
+*.key
+*.pem
+*.p12
+id_rsa
+id_ed25519
+id_ecdsa
+vault-password.txt
+vault_pass*
+secrets.yml
+*.tfstate
+*.tfstate.backup
+data/
+volumes/
+backups/
+__pycache__/
+*.pyc
+.ansible/tmp/
+.cache/
+
+# --- Claude-spezifische Ausschlüsse ---
+# Private Dokumentation (nicht für Claude zugänglich)
+docs/private/
+
+# Lokale Backup-Daten
+backups/
+data/
+volumes/
+
+# Ansible Vault-Rohdaten (verschlüsselt im Repo, Rohdaten nie zugänglich)
+# vault.yml Dateien werden als verschlüsselte Dateien gehalten
+# und sind für Claude lesbar — Rohdaten-Dumps nicht
+
+# Temporäre Dateien
+*.tmp
+*.temp
+tmp/
+temp/
+logs/

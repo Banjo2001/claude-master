@@ -1,0 +1,45 @@
+# =============================================================================
+# .gitleaks.toml — gitleaks v8 Konfiguration
+# ZWECK: Secret-Scanner Konfiguration. Platzhalter-Strings in Beispieldateien
+#        werden als harmlos markiert (allowlist).
+#
+# FORMAT: TOML (gitleaks v8)
+# SYNTAX: [allowlist] ist eine EINZELNE Map — NICHT [[allowlist]] (Array)!
+# =============================================================================
+
+title = "Proxmox Infra Admin — gitleaks Konfiguration"
+
+[extend]
+# Standard-Regelwerk von gitleaks verwenden (erkennt API-Keys, Tokens etc.)
+useDefault = true
+
+# ─── Globale Allowlist ───────────────────────────────────────────────────────
+# WICHTIG: In gitleaks v8 nur EIN [allowlist] Block erlaubt (keine Arrays)
+# Alles was hier steht gilt für den gesamten Scan
+
+[allowlist]
+description = "Platzhalter, Beispieldateien und Dokumentation ausschließen"
+
+# Dateipfade die vollständig übersprungen werden (reguläre Ausdrücke)
+paths = [
+  # Beispieldateien mit Platzhaltern
+  '''(^|/)\.env\.example$''',
+  '''\.example$''',
+  # Wissensdatenbanken (nur Dokumentation, keine echten Secrets)
+  '''(^|/)docs/''',
+  # Projekt-README und Arbeitsanweisung
+  '''(^|/)README\.md$''',
+  '''(^|/)CLAUDE\.md$''',
+]
+
+# Regex-Muster die überall als harmlos gelten (Platzhalter-Strings)
+regexes = [
+  # Unsere Standard-Platzhalter in spitzen Klammern (niemals echte Secrets)
+  '''<DEIN[_A-Z0-9]+>''',
+  '''<DEINE[_A-Z0-9]+>''',
+  '''<WIRD_VIA_VAULT_GESETZT>''',
+  # RFC 5737 Dokumentations-IPs (harmlos, kein echter Netzwerkbereich)
+  '''192\.0\.2\.\d{1,3}''',
+  '''198\.51\.100\.\d{1,3}''',
+  '''203\.0\.113\.\d{1,3}''',
+]

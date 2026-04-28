@@ -1,0 +1,31 @@
+# =============================================================================
+# .yamllint.yml — YAML Lint Konfiguration
+# ZWECK: Regeln für yamllint — prüft YAML-Syntax und Formatierung
+# =============================================================================
+---
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  truthy:
+    allowed-values:
+      - 'true'
+      - 'false'
+    check-keys: false
+  document-start:
+    present: false
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 1
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
