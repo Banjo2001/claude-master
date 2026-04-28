@@ -69,6 +69,37 @@ jobs:
       - name: "Repository auschecken"
         uses: actions/checkout@v4
 
+      - name: "CI-Vault und Vault-Passwort erstellen (Syntax-Check only)"
+        run: |
+          # WARUM: ansible.cfg setzt vault_password_file=~/.vault_pass.txt.
+          # In CI existiert diese Datei nicht. ansible-lint würde scheitern.
+          # Dummy-Werte sind sicher: Datei wird NICHT committed — nur für Lint.
+          echo "ci-dummy-vault-password" > ~/.vault_pass.txt
+
+          # WARUM: hosts.yml+vars.yml existieren jetzt im Repo, daher kann
+          # ansible-lint das Inventar laden und Syntax-Checks durchführen.
+          # vault.yml wird von Playbooks per vars_files eingebunden aber nicht
+          # committet (enthält Secrets auf echtem System). CI braucht Dummy.
+          mkdir -p ansible/inventories/prod/group_vars/all
+          cat > ansible/inventories/prod/group_vars/all/vault.yml << 'VAULTEOF'
+          ---
+          # CI ONLY — Keine echten Secrets! Nur für ansible-lint Syntax-Check.
+          # Werte: <WIRD_VIA_VAULT_GESETZT> = gitleaks-Allowlist-Pattern (kein Alarm)
+          vault_pve_api_token_id: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_pve_api_token_secret: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_pbs_api_token_id: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_pbs_api_token_secret: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_matrix_registration_shared_secret: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_matrix_macaroon_secret_key: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_matrix_db_password: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_coturn_auth_secret: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_nextcloud_db_password: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_nextcloud_db_root_password: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_nextcloud_admin_password: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_control_node_ssh_pubkey: "<WIRD_VIA_VAULT_GESETZT>"
+          vault_smtp_password: "<WIRD_VIA_VAULT_GESETZT>"
+          VAULTEOF
+
       - name: "Ansible Lint ausführen (nur wenn Playbooks vorhanden)"
         run: |
           # Installation und Ausführung NUR wenn Ansible-Dateien vorhanden
