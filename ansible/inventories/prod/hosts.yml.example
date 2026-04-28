@@ -1,0 +1,63 @@
+---
+# =============================================================================
+# DATEI:        ansible/inventories/prod/hosts.yml.example
+# ZWECK:        Beispiel-Inventar für Produktion. Vor Deploy umbenennen zu
+#               hosts.yml und mit echten IPs/Hostnames füllen.
+#               (Wird auch automatisch von 03_init_ansible_vault.sh erstellt.)
+# KOPIEREN:     cp hosts.yml.example hosts.yml
+# SICHERHEIT:   Echte IPs sind keine Secrets, dürfen aber je nach Setup
+#               (z.B. interne RFC1918-Bereiche) als sensibel gelten.
+# PLATZHALTER:  192.0.2.x = RFC 5737 TEST-NET (nicht routbar, dokumentations-sicher)
+# =============================================================================
+
+all:
+  vars:
+    # Ansible nutzt Python 3 auf den Zielhosts
+    ansible_python_interpreter: /usr/bin/python3
+
+  children:
+
+    # ─── Proxmox VE Cluster ────────────────────────────────────────────────────
+    proxmox_ve:
+      hosts:
+        pve01:
+          ansible_host: "192.0.2.10"          # ANPASSEN: echte PVE-IP
+          ansible_user: root
+          ansible_ssh_private_key_file: "~/.ssh/id_ed25519_proxmox"
+
+    # ─── Proxmox Backup Server ────────────────────────────────────────────────
+    proxmox_backup:
+      hosts:
+        pbs01:
+          ansible_host: "192.0.2.11"          # ANPASSEN: echte PBS-IP
+          ansible_user: root
+          ansible_ssh_private_key_file: "~/.ssh/id_ed25519_proxmox"
+
+    # ─── Matrix Synapse (LXC oder VM auf PVE) ─────────────────────────────────
+    matrix_servers:
+      hosts:
+        matrix01:
+          ansible_host: "192.0.2.20"          # ANPASSEN: echte Matrix-IP
+          ansible_user: root
+          ansible_ssh_private_key_file: "~/.ssh/id_ed25519_proxmox"
+
+    # ─── Nextcloud AIO (LXC oder VM auf PVE) ──────────────────────────────────
+    nextcloud_servers:
+      hosts:
+        nextcloud01:
+          ansible_host: "192.0.2.21"          # ANPASSEN: echte Nextcloud-IP
+          ansible_user: root
+          ansible_ssh_private_key_file: "~/.ssh/id_ed25519_proxmox"
+
+    # ─── Alle App-Server (Matrix + Nextcloud) ─────────────────────────────────
+    app_servers:
+      children:
+        matrix_servers:
+        nextcloud_servers:
+
+    # ─── Alle verwalteten Server (für common-Rolle) ───────────────────────────
+    managed:
+      children:
+        proxmox_ve:
+        proxmox_backup:
+        app_servers:

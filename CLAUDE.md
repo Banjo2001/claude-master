@@ -304,6 +304,65 @@ IFS=$'\n\t'
 
 ---
 
+### 2026-04-28 (3) — PR-Verifikation + Pre-Deploy-Vorbereitung
+
+**Bugfixes Run 1 (5 Issues):**
+- `ansible.cfg` — `vault_password_file = ~/.vault_pass.txt` aktive Direktive ergänzt
+  (war zuvor nur Kommentar — sonst manuelles --vault-password-file bei jedem Befehl).
+- `ansible/roles/docker/tasks/main.yml` — Reihenfolge GPG-Key-Import / Keyring-Dir
+  korrigiert; vom deprecated `ansible.builtin.apt_key` auf `get_url` (.asc) migriert.
+- `ansible/roles/matrix_synapse/tasks/nginx.yml` — kompletter Rewrite des Let's
+  Encrypt Setups: certbot apt-Install ergänzt, `--config-dir` Override auf
+  `matrix_base_dir/certs`, systemd-Timer + pre/post-Hooks für Renewal.
+  Vorher: `--cert-path` falsches Flag, certbot nicht installiert, Pfade landeten
+  außerhalb des Nginx-Mounts.
+- `ansible/roles/matrix_synapse/tasks/main.yml` — `firewall.yml` an Position 2
+  verschoben (vor Nginx) damit certbot --standalone Port 80 nutzen kann.
+- `.env.example` — `PVE_TLS_VERIFY` → `PVE_VERIFY_SSL` (analog PBS), harmonisiert
+  mit den Variablennamen aus `pve_api.sh` / `pbs_api.sh`.
+
+**Bugfixes Run 2 (3 Issues):**
+- `ansible/roles/matrix_synapse/tasks/nginx.yml` — 3 Task-Namen großgeschrieben
+  (ansible-lint name[casing]: "Certbot...", "Systemd-Timer...").
+
+**Run 3:** keine weiteren Issues. Repository lint-clean unter:
+- yamllint (.yamllint.yml)
+- shellcheck (severity warning)
+- ansible-lint Profile basic (sogar production-Profile passes für Rollen).
+
+**Pre-Deploy-Vorbereitung — neue Helfer:**
+- `scripts/setup/04_generate_secrets.sh` — generiert kryptografisch starke
+  Hex-Secrets (256 Bit) und ersetzt Platzhalter in vault.yml automatisch.
+- `scripts/setup/05_dns_preflight.sh` — prüft DNS-Records (A/AAAA/SRV) vor
+  Deploy → verhindert LE-Rate-Limit-Treffer (5 Fehlversuche/Stunde/Domain).
+- `scripts/setup/06_inventory_check.sh` — validiert Inventar, Vault, SSH, sudo
+  vor erstem Playbook-Lauf.
+
+**Pre-Deploy-Vorbereitung — neue Templates:**
+- `ansible/inventories/prod/hosts.yml.example`
+- `ansible/inventories/prod/group_vars/all/vars.yml.example`
+- `ansible/inventories/prod/group_vars/all/vault.yml.example`
+
+**Wissensdatenbank ergänzt:**
+- `docs/knowledge/deploy_workflow.md` — zentrale Deploy-Reihenfolge, Rollback-
+  Strategien, Pre-Deploy-Checkliste, Fehler-Tabelle, Idempotenz-Hinweise.
+
+**Neu für KI-Übernahme:**
+- `actionlog.md` — zentrales Logbuch aller Sessions: Zielsetzung, Phasen mit
+  Subphasen, aktuelle TODOs, Notizen, chronologisches Sessions-Protokoll.
+  Wird bei jeder Session vor/nach der Arbeit gelesen/gepflegt.
+- `prompt.txt` — vorbereiteter Prompt für Claude Code, um den Deploy nach der
+  manuellen Vorbereitung selbständig fortzuführen.
+- `README.md` und `instruction.md` aktualisiert mit Hinweis auf neue Skripte
+  und prompt.txt-Workflow.
+
+**Status nach Session:**
+- Repository: vollständig + lint-clean. Erstdeploy-bereit (Code-seitig).
+- Offen: Phase 8 (manuelle Vorbereitung durch User: Hetzner, DNS, SSH-Keys).
+- Nächste KI-Session lädt `prompt.txt` + `actionlog.md` und startet Phase 9.
+
+---
+
 ### 2026-04-28 — Phasen 2–5 + Doku + Korrektheitsprüfung (Claude Code Session)
 
 **Phase 2: Setup-Skripte**
