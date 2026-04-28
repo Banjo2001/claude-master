@@ -30,12 +30,15 @@ matrix_logs_dir: "{{ matrix_base_dir }}/logs"
 # KRITISCH: LC_COLLATE und LC_CTYPE MÜSSEN 'C' sein für Matrix!
 matrix_db_name: "synapse"
 matrix_db_user: "synapse"
-matrix_db_host: "localhost"
+# WICHTIG: Docker-Service-Name, nicht "localhost"!
+# Synapse läuft im selben Compose-Stack wie PostgreSQL.
+matrix_db_host: "postgres"
 matrix_db_port: 5432
 matrix_db_locale: "C"
 
 # ─── Redis ───────────────────────────────────────────────────────────────────
-matrix_redis_host: "localhost"
+# WICHTIG: Docker-Service-Name, nicht "localhost"!
+matrix_redis_host: "redis"
 matrix_redis_port: 6379
 
 # ─── Coturn TURN-Server ───────────────────────────────────────────────────────

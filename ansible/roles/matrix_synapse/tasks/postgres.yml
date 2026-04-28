@@ -12,19 +12,13 @@
     dest: "{{ matrix_config_dir }}/init_postgres.sql"
     content: |
       -- Matrix Synapse PostgreSQL Initialisierung
-      -- KRITISCH: LC_COLLATE und LC_CTYPE MÜSSEN 'C' sein!
-      -- Quelle: https://matrix-org.github.io/synapse/latest/postgres.html
-
-      CREATE USER {{ matrix_db_user }}
-        WITH PASSWORD '{{ vault_matrix_db_password }}'
-        CREATEDB;
-
-      CREATE DATABASE {{ matrix_db_name }}
-        ENCODING 'UTF8'
-        LC_COLLATE='C'
-        LC_CTYPE='C'
-        template=template0
-        OWNER {{ matrix_db_user }};
+      -- WARUM kein CREATE DATABASE hier:
+      -- POSTGRES_DB + POSTGRES_INITDB_ARGS (--lc-collate=C --lc-ctype=C)
+      -- in compose.yml erstellen die Datenbank bereits korrekt.
+      -- Doppeltes CREATE DATABASE würde mit "already exists" fehlschlagen.
+      --
+      -- Dieses Skript läuft nach der Datenbankerstellung (initdb.d) und
+      -- stellt nur sicher, dass die Rechte korrekt gesetzt sind.
 
       GRANT ALL PRIVILEGES ON DATABASE {{ matrix_db_name }} TO {{ matrix_db_user }};
     owner: root

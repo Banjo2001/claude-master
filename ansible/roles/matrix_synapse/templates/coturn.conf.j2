@@ -16,15 +16,18 @@ use-auth-secret
 static-auth-secret={{ vault_coturn_auth_secret }}
 
 # TLS-Zertifikate
-cert=/etc/ssl/certs/matrix.{{ matrix_domain }}.pem
-pkey=/etc/ssl/private/matrix.{{ matrix_domain }}.key
+# WARUM dieser Pfad: compose.yml mountet matrix_base_dir/certs → /etc/ssl
+# Let's Encrypt legt Zertifikate unter live/<DOMAIN>/ ab.
+cert=/etc/ssl/live/matrix.{{ matrix_domain }}/fullchain.pem
+pkey=/etc/ssl/live/matrix.{{ matrix_domain }}/privkey.pem
 
 # Logging
 log-file=/var/log/coturn/turnserver.log
 verbose
 
-# Keine eigene Benutzer-Datenbank
-no-auth
+# WARUM KEIN no-auth: use-auth-secret und no-auth schließen sich aus!
+# no-auth würde alle Authentifizierung deaktivieren — Sicherheitslücke.
+# Mit use-auth-secret nutzt Coturn HMAC-basierte REST-API Auth (Matrix-kompatibel).
 
 # Sicherheit: nur TURN erlauben (kein STUN-only)
 no-stun

@@ -10,8 +10,11 @@
     dest: "{{ matrix_config_dir }}/redis.conf"
     content: |
       # Redis Konfiguration für Matrix Synapse
-      # Nur lokale Verbindungen erlauben
-      bind 127.0.0.1
+      # WARUM 0.0.0.0: Redis läuft in einem Docker-Container auf dem
+      # internen matrix_internal-Netzwerk (internal: true = kein Internet-Zugang).
+      # Synapse und Redis sind separate Container — bind 127.0.0.1 würde
+      # Synapse den Zugriff verweigern. Das interne Netzwerk ist sicher.
+      bind 0.0.0.0
       port {{ matrix_redis_port }}
       # Passwort (optional für lokale Deployments)
       # requirepass your_password_here
