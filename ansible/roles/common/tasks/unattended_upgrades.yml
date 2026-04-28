@@ -1,0 +1,31 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/common/tasks/unattended_upgrades.yml
+# ZWECK:        Automatische Sicherheits-Updates via unattended-upgrades
+# ROLLBACK:     apt remove unattended-upgrades
+# =============================================================================
+
+- name: "unattended-upgrades Paket installieren"
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+
+- name: "Automatische Updates konfigurieren"
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Download-Upgradeable-Packages "1";
+      APT::Periodic::AutocleanInterval "7";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: "unattended-upgrades starten und aktivieren"
+  ansible.builtin.service:
+    name: unattended-upgrades
+    state: started
+    enabled: true

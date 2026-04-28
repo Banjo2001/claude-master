@@ -1,0 +1,24 @@
+---
+# =============================================================================
+# DATEI:        ansible/playbooks/common.yml
+# ZWECK:        Basis-Konfiguration für alle verwalteten Hosts
+#               (Pakete, SSH, UFW, Fail2Ban, sysctl)
+# AUFRUFEN:     ansible-playbook ansible/playbooks/common.yml
+# TESTEN:       ansible-playbook ansible/playbooks/common.yml --check --diff
+# ROLLBACK:     Backup-Configs wiederherstellen (werden mit .bak.DATUM gesichert)
+# =============================================================================
+
+- name: "Basis-Konfiguration"
+  hosts: managed
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - "{{ playbook_dir }}/../inventories/prod/group_vars/all/vars.yml"
+    - "{{ playbook_dir }}/../inventories/prod/group_vars/all/vault.yml"
+
+  roles:
+    - role: common
+      tags:
+        - common
+        - base

@@ -1,0 +1,18 @@
+---
+# =============================================================================
+# DATEI:        ansible/playbooks/docker.yml
+# ZWECK:        Docker CE auf App-Servern installieren
+# AUFRUFEN:     ansible-playbook ansible/playbooks/docker.yml
+# TESTEN:       ansible-playbook ansible/playbooks/docker.yml --check --diff
+# ROLLBACK:     apt remove docker-ce docker-ce-cli containerd.io
+# =============================================================================
+
+- name: "Docker CE Installation"
+  hosts: app_servers
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: docker
+      tags:
+        - docker

@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# DATEI:        ansible/roles/common/handlers/main.yml
+# ZWECK:        Handler für die Common-Rolle
+#               Handler werden nur ausgeführt wenn notify: ausgelöst wird
+# =============================================================================
+
+- name: "restart_sshd"
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+
+- name: "restart_fail2ban"
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+
+- name: "restart_cron"
+  ansible.builtin.service:
+    name: cron
+    state: restarted
+
+- name: "apply_sysctl"
+  ansible.builtin.command: sysctl --system
+  changed_when: false
+
+- name: "reload_ufw"
+  ansible.builtin.command: ufw reload
+  changed_when: false
